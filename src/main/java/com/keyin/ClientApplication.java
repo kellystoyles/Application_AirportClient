@@ -24,6 +24,23 @@ public class ClientApplication {
     public static class AirportClientApp {
         private static String BASE_URL;
         private static final HttpClient httpClient = HttpClient.newHttpClient();
+        private static final Map<String, String> PROVINCE_ABBREVIATIONS = new HashMap<>();
+        static {
+            PROVINCE_ABBREVIATIONS.put("Newfoundland and Labrador", "NL");
+            PROVINCE_ABBREVIATIONS.put("Prince Edward Island", "PE");
+            PROVINCE_ABBREVIATIONS.put("Nova Scotia", "NS");
+            PROVINCE_ABBREVIATIONS.put("New Brunswick", "NB");
+            PROVINCE_ABBREVIATIONS.put("Quebec", "QC");
+            PROVINCE_ABBREVIATIONS.put("Ontario", "ON");
+            PROVINCE_ABBREVIATIONS.put("Manitoba", "MB");
+            PROVINCE_ABBREVIATIONS.put("Saskatchewan", "SK");
+            PROVINCE_ABBREVIATIONS.put("Alberta", "AB");
+            PROVINCE_ABBREVIATIONS.put("British Columbia", "BC");
+            PROVINCE_ABBREVIATIONS.put("Yukon", "YT");
+            PROVINCE_ABBREVIATIONS.put("Northwest Territories", "NT");
+            PROVINCE_ABBREVIATIONS.put("Nunavut", "NU");
+        }
+
 
         static {
             try {
@@ -120,22 +137,22 @@ public class ClientApplication {
 
         private static void processUserChoice(int choice) {
             switch (choice) {
-                case 1:
+                case 1: // Working
                     listAllAircraft();
                     break;
-                case 2:
+                case 2: // Working
                     listAircraftCapacity();
                     break;
-                case 3:
+                case 3: // Working
                     listAirportsByProvince();
                     break;
-                case 4:
+                case 4: // Not Working Yet
                     listProvincesWithMultipleAirports();
                     break;
-                case 5:
+                case 5: // Not Working Yet
                     listProvincesNeedingAirports();
                     break;
-                case 6:
+                case 6: // Working
                     System.out.println("Exiting the application. Goodbye!");
                     System.exit(0);
                 default:
@@ -159,8 +176,14 @@ public class ClientApplication {
         }
 
         private static void listAirportsByProvince() {
-            sendGetRequest("/airports/byProvince", "Airports by province");
+            String citiesResponse = sendGetRequest("/city", "Cities");
+
+            if (citiesResponse != null) {
+                processAirportsByProvince(citiesResponse);
+            }
         }
+
+
 
         private static void listProvincesWithMultipleAirports() {
             sendGetRequest("/provinces/multipleAirports", "Provinces with multiple airports");
@@ -266,6 +289,170 @@ public class ClientApplication {
             }
         }
 
+        private static void processAirportsByProvince(String citiesJson) {
+            Scanner scanner = new Scanner(System.in);
+
+            Map<String, List<String>> provinceToAirportsMap = new HashMap<>();
+
+            parseCitiesData(citiesJson, provinceToAirportsMap);
+
+            System.out.println("Available provinces:");
+            for (String province : provinceToAirportsMap.keySet()) {
+                String abbreviation = PROVINCE_ABBREVIATIONS.get(province);
+                if (abbreviation != null) {
+                    System.out.println(" - " + province + " (" + abbreviation + ")");
+                } else {
+                    System.out.println(" - " + province);
+                }
+            }
+
+            System.out.print("Enter the province name or abbreviation (e.g., 'Ontario' or 'ON', or 'All' to display all provinces): ");
+            String provinceInput = scanner.nextLine().trim();
+
+            if (provinceInput.equalsIgnoreCase("All")) {
+                displayAirportsByProvince(provinceToAirportsMap);
+            } else {
+                String provinceName = null;
+                for (Map.Entry<String, String> entry : PROVINCE_ABBREVIATIONS.entrySet()) {
+                    String fullName = entry.getKey();
+                    String abbreviation = entry.getValue();
+
+                    if (fullName.equalsIgnoreCase(provinceInput) || abbreviation.equalsIgnoreCase(provinceInput)) {
+                        provinceName = fullName;
+                        break;
+                    }
+                }
+
+                if (provinceName == null) {
+                    System.out.println("Province not found: " + provinceInput);
+                } else {
+                    Map<String, List<String>> filteredMap = new HashMap<>();
+                    List<String> airports = provinceToAirportsMap.get(provinceName);
+                    if (airports != null) {
+                        filteredMap.put(provinceName, airports);
+                        displayAirportsByProvince(filteredMap);
+                    } else {
+                        System.out.println("No airports found in " + provinceName + ".");
+                    }
+                }
+            }
+        }
+
+
+
+
+        private static void parseCitiesData(String citiesJson, Map<String, List<String>> provinceToAirportsMap) {
+            if (citiesJson.length() < 2) {
+                System.out.println("No city data received.");
+                return;
+            }
+
+            String trimmedResponse = citiesJson.substring(1, citiesJson.length() - 1);
+
+            String[] cityEntries = trimmedResponse.split("\\},\\{");
+
+            for (String entry : cityEntries) {
+                if (!entry.startsWith("{")) {
+                    entry = "{" + entry;
+                }
+                if (!entry.endsWith("}")) {
+                    entry = entry + "}";
+                }
+
+                String province = extractValue(entry, "province");
+
+                String airportsData = extractValue(entry, "airports");
+                List<String> airportsList = new ArrayList<>();
+
+                if (airportsData != null && !airportsData.equals("[]")) {
+                    airportsData = airportsData.substring(1, airportsData.length() - 1);
+
+                    String[] airportEntries = airportsData.split("\\},\\{");
+
+                    for (String airportEntry : airportEntries) {
+                        if (!airportEntry.startsWith("{")) {
+                            airportEntry = "{" + airportEntry;
+                        }
+                        if (!airportEntry.endsWith("}")) {
+                            airportEntry = airportEntry + "}";
+                        }
+
+                        String airportName = extractValue(airportEntry, "name");
+                        String iataCode = extractValue(airportEntry, "iata_code");
+
+                        if (airportName != null && iataCode != null) {
+                            String airportInfo = airportName + " (" + iataCode + ")";
+                            airportsList.add(airportInfo);
+                        }
+                    }
+                }
+
+                if (province != null && !airportsList.isEmpty()) {
+                    List<String> existingAirports = provinceToAirportsMap.getOrDefault(province, new ArrayList<>());
+                    existingAirports.addAll(airportsList);
+                    provinceToAirportsMap.put(province, existingAirports);
+                }
+            }
+        }
+
+        private static String extractValue(String json, String key) {
+            String keyPattern = "\"" + key + "\":";
+            int keyIndex = json.indexOf(keyPattern);
+            if (keyIndex == -1) {
+                return null;
+            }
+            int valueStart = keyIndex + keyPattern.length();
+
+            char firstChar = json.charAt(valueStart);
+            if (firstChar == '\"') {
+                int valueEnd = json.indexOf("\"", valueStart + 1);
+                if (valueEnd == -1) {
+                    return null;
+                }
+                return json.substring(valueStart + 1, valueEnd);
+            } else if (firstChar == '[') {
+                int brackets = 1;
+                int i = valueStart + 1;
+                while (i < json.length() && brackets > 0) {
+                    if (json.charAt(i) == '[') brackets++;
+                    else if (json.charAt(i) == ']') brackets--;
+                    i++;
+                }
+                return json.substring(valueStart, i);
+            } else if (firstChar == '{') {
+                int braces = 1;
+                int i = valueStart + 1;
+                while (i < json.length() && braces > 0) {
+                    if (json.charAt(i) == '{') braces++;
+                    else if (json.charAt(i) == '}') braces--;
+                    i++;
+                }
+                return json.substring(valueStart, i);
+            } else {
+                int valueEnd = json.indexOf(",", valueStart);
+                if (valueEnd == -1) {
+                    valueEnd = json.indexOf("}", valueStart);
+                }
+                if (valueEnd == -1) {
+                    valueEnd = json.length();
+                }
+                return json.substring(valueStart, valueEnd).trim();
+            }
+        }
+
+
+        private static void displayAirportsByProvince(Map<String, List<String>> provinceToAirportsMap) {
+            for (Map.Entry<String, List<String>> entry : provinceToAirportsMap.entrySet()) {
+                String province = entry.getKey();
+                List<String> airports = entry.getValue();
+
+                System.out.println(province + ":");
+                for (String airport : airports) {
+                    System.out.println("    - " + airport);
+                }
+                System.out.println();
+            }
+        }
 
     }
 }
