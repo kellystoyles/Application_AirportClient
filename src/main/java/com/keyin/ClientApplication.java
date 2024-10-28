@@ -5,6 +5,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceEvent;
@@ -140,11 +144,18 @@ public class ClientApplication {
         }
 
         private static void listAllAircraft() {
-            sendGetRequest("/aircraft", "Aircraft");
+            String responseBody = sendGetRequest("/aircraft", "Aircraft");
+            if (responseBody != null) {
+                processAircraftAllData(responseBody);
+            }
         }
 
+
         private static void listAircraftCapacity() {
-            sendGetRequest("/aircraft/capacity", "Aircraft capacity");
+            String responseBody = sendGetRequest("/aircraft", "Aircraft capacity");
+            if (responseBody != null) {
+                processAircraftCapacityData(responseBody);
+            }
         }
 
         private static void listAirportsByProvince() {
@@ -159,17 +170,102 @@ public class ClientApplication {
             sendGetRequest("/provinces/needingAirports", "Provinces needing airports");
         }
 
-        private static void sendGetRequest(String endpoint, String resourceName) {
+        private static String sendGetRequest(String endpoint, String resourceName) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(BASE_URL + endpoint))
                         .GET()
                         .build();
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                System.out.println(resourceName + ": " + response.body());
+
+                if (response.statusCode() == 200) {
+                    return response.body();
+                } else {
+                    System.out.println("Error: Received status code " + response.statusCode());
+                    return null;
+                }
             } catch (Exception e) {
                 System.out.println("Error fetching " + resourceName + ": " + e.getMessage());
+                return null;
             }
         }
+
+        private static void processAircraftAllData(String jsonResponse) {
+            if (jsonResponse.length() < 2) {
+                System.out.println("No data received.");
+                return;
+            }
+            String trimmedResponse = jsonResponse.substring(1, jsonResponse.length() - 1);
+            String[] aircraftEntries = trimmedResponse.split("\\},\\{");
+            Map<String, List<String>> airlineModelsMap = new HashMap<>();
+            for (String entry : aircraftEntries) {
+                entry = entry.replaceAll("^\\{", "").replaceAll("\\}$", "");
+                String[] keyValuePairs = entry.split(",");
+                String airline = "";
+                String model = "";
+                for (String pair : keyValuePairs) {
+                    String[] keyAndValue = pair.split(":", 2);
+                    if (keyAndValue.length == 2) {
+                        String key = keyAndValue[0].trim().replaceAll("^\"|\"$", "");
+                        String value = keyAndValue[1].trim().replaceAll("^\"|\"$", "");
+
+                        if (key.equals("airline")) {
+                            airline = value;
+                        } else if (key.equals("model")) {
+                            model = value;
+                        }
+                    }
+                }
+                if (!airline.isEmpty() && !model.isEmpty()) {
+                    List<String> models = airlineModelsMap.getOrDefault(airline, new ArrayList<>());
+                    if (!models.contains(model)) {
+                        models.add(model);
+                    }
+                    airlineModelsMap.put(airline, models);
+                }
+            }
+            for (Map.Entry<String, List<String>> entry : airlineModelsMap.entrySet()) {
+                String airlineName = entry.getKey();
+                List<String> models = entry.getValue();
+                System.out.println("Airline: " + airlineName);
+                System.out.println("Models:");
+                for (String modelName : models) {
+                    System.out.println("  - " + modelName);
+                }
+                System.out.println();
+            }
+        }
+
+        private static void processAircraftCapacityData(String jsonResponse) {
+            if (jsonResponse.length() < 2) {
+                System.out.println("No data received.");
+                return;
+            }
+            String trimmedResponse = jsonResponse.substring(1, jsonResponse.length() - 1);
+            String[] aircraftEntries = trimmedResponse.split("\\},\\{");
+            for (String entry : aircraftEntries) {
+                entry = entry.replaceAll("^\\{", "").replaceAll("\\}$", "");
+                String[] keyValuePairs = entry.split(",");
+                String capacity = "";
+                String model = "";
+                for (String pair : keyValuePairs) {
+                    String[] keyAndValue = pair.split(":", 2);
+                    if (keyAndValue.length == 2) {
+                        String key = keyAndValue[0].trim().replaceAll("^\"|\"$", "");
+                        String value = keyAndValue[1].trim().replaceAll("^\"|\"$", "");
+                        if (key.equals("model")) {
+                            model = value;
+                        } else if (key.equals("capacity")) {
+                            capacity = value;
+                        }
+                    }
+                }
+                if (!model.isEmpty() && !capacity.isEmpty()) {
+                    System.out.println(model + " - " + capacity);
+                }
+            }
+        }
+
+
     }
 }
