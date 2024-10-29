@@ -14,6 +14,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 // File Imports
 import com.keyin.Util.CitiesProcessing;
+import com.keyin.Util.AirportProcessing;
+import com.keyin.Util.AircraftProccessing;
 
 public class ClientApplication {
     public static void main(String[] args) {
@@ -103,7 +105,7 @@ public class ClientApplication {
             while (true) {
                 try {
                     MenuDisplay();
-                    int choice = getUserChoice(scanner);
+                    int choice = getUserChoiceInt(scanner);
                     processUserChoice(choice);
                     if (choice == 5 && ActiveMenu != 1) {
                         ActiveMenu = 1;
@@ -150,7 +152,7 @@ public class ClientApplication {
                       Future Airport Management
                     =============================
                     1. List all provinces that have over 1 million people and only 1 major airport
-                    2. Which planes cannot fly into/out of xyz airport
+                    2. Which planes can fly into/out of xyz airport
                     3. 
                     4. 
                     5. Back to main menu
@@ -183,7 +185,7 @@ public class ClientApplication {
             }
         }
 
-        private static int getUserChoice(Scanner scanner) {
+        private static int getUserChoiceInt(Scanner scanner) {
             while (true) {
                 System.out.print("Enter your choice: ");
                 if (scanner.hasNextInt()) {
@@ -191,6 +193,18 @@ public class ClientApplication {
                     return scanner.nextInt();
                 } else {
                     System.out.println("Invalid input. Please enter a number.");
+                    scanner.next();
+                }
+            }
+        }
+        private static String getUserChoiceStr(Scanner scanner) {
+            while (true) {
+                System.out.print("Enter your choice: ");
+                if (scanner.hasNext()) {
+                    System.out.println();
+                    return scanner.next();
+                } else {
+                    System.out.println("Invalid input.");
                     scanner.next();
                 }
             }
@@ -213,6 +227,9 @@ public class ClientApplication {
                         break;
                     case 5: // Exit
                         break;
+                    case 99:
+                        String responseBody = sendGetRequest("/airports", "Airport");
+                        AirportProcessing.processAirportDataAll(responseBody, 99, null, null);
                     default: // Invalid Choice
                         break;
                 }
@@ -224,7 +241,7 @@ public class ClientApplication {
                     case 2: // Update all aircraft out of service #Implemented but untested#
                         System.out.println("Enter the Aircraft ID for the aircraft you want to update");
                         Scanner scanner = new Scanner(System.in);
-                        String endpointId = Integer.toString(getUserChoice(scanner));
+                        String endpointId = Integer.toString(getUserChoiceInt(scanner));
                         updateAircraftStatus(endpointId);
                         break;
                     case 3: // Undecided
@@ -243,6 +260,8 @@ public class ClientApplication {
                         ActiveMenu = 1;
                         break;
                     case 2: // Which planes cannot fly into/out of xyz airport
+                        aircraftAccess();
+                        ActiveMenu = 1;
                         break;
                     case 3: // Undecided
                         break;
@@ -256,6 +275,7 @@ public class ClientApplication {
             } else if (ActiveMenu == 4) { // Airline Management Menu
                 switch (choice) {
                     case 1: // How many planes have a capacity greater than 180 passengers in each fleet
+                        airlineNumOfLrgCapacity();
                         break;
                     case 2: // Add new aircraft to its respective airline
                         break;
@@ -263,7 +283,7 @@ public class ClientApplication {
                         // If Based on id the following works
                         System.out.println("Aircraft ID to delete");
                         Scanner scanner = new Scanner(System.in);
-                        String idToDelete = Integer.toString(getUserChoice(scanner));
+                        String idToDelete = Integer.toString(getUserChoiceInt(scanner));
                         deletingUnactiveAircrafts(idToDelete);
                         ActiveMenu = 1;
                         break;
@@ -299,13 +319,36 @@ public class ClientApplication {
             }
         }
 
+        private static void airlineNumOfLrgCapacity() {
+            String responseBody = sendGetRequest("/aircraft", "Aircraft");
+            if (responseBody != null) {
+                AircraftProccessing.processAircraftAllData(responseBody, 3);
+            }
+        }
+
+        private static void aircraftAccess(){
+            String responseBody = sendGetRequest("/airports", "Airports");
+            System.out.println("IATA Code for the airport");
+            Scanner scanner = new Scanner(System.in);
+            String iataToFind = getUserChoiceStr(scanner).toUpperCase();
+            List<String> aircraftList = new ArrayList<>();
+            if (responseBody != null) {
+                AirportProcessing.processAirportDataAll(responseBody, 1, iataToFind, aircraftList);
+            }
+            if (!aircraftList.isEmpty()) {
+                System.out.println("Aircraft for IATA code " + iataToFind + ": " + aircraftList+ "\n");
+            }else {
+                System.out.println("No Aircraft found for IATA code " + iataToFind+ "\n");
+            }
+        }
+
         private static void updateAircraftStatus(String id) {
             String responseBody = sendGetRequest("/aircraft/" + id, "Aircraft/" + id);
             String requestBody = "Undefined";
             if (responseBody != null) {
                 System.out.println("Enter A, D, or S for (Active, Decommissioned, Sold) respectively ");
                 Scanner scanner = new Scanner(System.in);
-                String newStatus = Integer.toString(getUserChoice(scanner));
+                String newStatus = Integer.toString(getUserChoiceInt(scanner));
                 if (newStatus == "A") {
                     String newStatusLong = "Active";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";

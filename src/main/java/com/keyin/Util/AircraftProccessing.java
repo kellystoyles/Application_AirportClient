@@ -28,6 +28,7 @@ public class AircraftProccessing {
         String[] aircraftEntries = trimmedResponse.split("\\},\\{");
 
         Map<String, List<String>> airlineModelsMap = new HashMap<>();
+        Map<String, Integer> airlineCapacityCount = new HashMap<>();
 
         // Splits entrys into the KeyValue pairs via the comma seperating each one
         for (String entry : aircraftEntries) {
@@ -79,6 +80,10 @@ public class AircraftProccessing {
                 }
                 airlineModelsMap.put(airline, models);
             }
+
+            if (CallReason == 3 && capacity > 180 && !airline.isEmpty()) {
+                airlineCapacityCount.put(airline, airlineCapacityCount.getOrDefault(airline, 0) + 1);
+            }
         }
         if (CallReason == 1){
             for (Map.Entry<String, List<String>> entry : airlineModelsMap.entrySet()) {
@@ -96,7 +101,11 @@ public class AircraftProccessing {
 
         }
         if (CallReason == 3){
-
+            System.out.println("Planes with capacity > 180 passengers by airline: \n");
+            for (Map.Entry<String, Integer> entry : airlineCapacityCount.entrySet()) {
+                System.out.println("Airline: " + entry.getKey() + " - Planes with capacity > 180: " + entry.getValue());
+            }
+            System.out.println();
         }
     }
 }
