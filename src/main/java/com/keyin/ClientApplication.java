@@ -221,7 +221,11 @@ public class ClientApplication {
                 switch (choice) {
                     case 1: // List the number of flights daily in xyz airport
                         break;
-                    case 2: // Update all aircraft out of service
+                    case 2: // Update all aircraft out of service #Implemented but untested#
+                        System.out.println("Enter the Aircraft ID for the aircraft you want to update");
+                        Scanner scanner = new Scanner(System.in);
+                        String endpointId = Integer.toString(getUserChoice(scanner));
+                        updateAircraftStatus(endpointId);
                         break;
                     case 3: // Undecided
                         break;
@@ -295,6 +299,29 @@ public class ClientApplication {
             }
         }
 
+        private static void updateAircraftStatus(String id) {
+            String responseBody = sendGetRequest("/aircraft/" + id, "Aircraft/" + id);
+            String requestBody = "Undefined";
+            if (responseBody != null) {
+                System.out.println("Enter A, D, or S for (Active, Decommissioned, Sold) respectively ");
+                Scanner scanner = new Scanner(System.in);
+                String newStatus = Integer.toString(getUserChoice(scanner));
+                if (newStatus == "A") {
+                    String newStatusLong = "Active";
+                    requestBody = "{\"status\":\"" + newStatusLong + "\"}";
+                }else if (newStatus == "S") {
+                    String newStatusLong = "Sold";
+                    requestBody = "{\"status\":\"" + newStatusLong + "\"}";
+                }else if (newStatus == "D") {
+                    String newStatusLong = "Decommissioned";
+                    requestBody = "{\"status\":\"" + newStatusLong + "\"}";
+                }
+                sendPatchRequest("/aircraft/" + id, requestBody);
+            } else {
+                System.out.println("Aircraft not found");
+            }
+        }
+
         private static void deletingUnactiveAircrafts(String aircraftId) {
             String endpoint = "/aircraft/" + aircraftId;
             String responseBody = sendDeleteRequest(endpoint, "Aircraft Id");
@@ -341,5 +368,28 @@ public class ClientApplication {
                 return null;
             }
         }
+
+        private static String sendPatchRequest(String endpoint, String requestBody) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + endpoint))
+                        .header("Content-Type", "application/json")
+                        .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody))  // Custom PATCH method
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200 || response.statusCode() == 204) {  // 204 No Content often indicates success for PATCH
+                    return response.body();
+                } else {
+                    System.out.println("Error: Received status code " + response.statusCode());
+                    return null;
+                }
+            } catch (Exception e) {
+                System.out.println("Error updating resource: " + e.getMessage());
+                return null;
+            }
+        }
+
     }
 }
