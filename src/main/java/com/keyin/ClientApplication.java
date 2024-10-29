@@ -4,11 +4,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Scanner;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceEvent;
@@ -16,12 +12,16 @@ import javax.jmdns.ServiceListener;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
+// File Imports
+import com.keyin.Util.CitiesProcessing;
+
 public class ClientApplication {
     public static void main(String[] args) {
         AirportClientApp.main(args);
     }
 
     public static class AirportClientApp {
+        private static Integer ActiveMenu;
         private static String BASE_URL;
         private static final HttpClient httpClient = HttpClient.newHttpClient();
         private static final Map<String, String> PROVINCE_ABBREVIATIONS = new HashMap<>();
@@ -99,12 +99,15 @@ public class ClientApplication {
         public static void main(String[] args) {
             System.out.println("\nWelcome to the Airport Management System!");
             Scanner scanner = new Scanner(System.in);
+            ActiveMenu = 1;
             while (true) {
                 try {
-                    displayMenu();
+                    MenuDisplay();
                     int choice = getUserChoice(scanner);
                     processUserChoice(choice);
-                    if (choice == 6) {
+                    if (choice == 5 && ActiveMenu != 1) {
+                        ActiveMenu = 1;
+                    } else if (choice == 5 && ActiveMenu == 1) {
                         System.out.println("Exiting the application. Goodbye!");
                         System.exit(0);
                     }
@@ -114,19 +117,77 @@ public class ClientApplication {
             }
         }
 
-        private static void displayMenu() {
-            System.out.println("\n1. List all the aircraft in each fleet");
-            System.out.println("2. How many passengers can each aircraft hold");
-            System.out.println("3. List airports in a province by IATA code");
-            System.out.println("4. List all provinces that have more than 1 airport");
-            System.out.println("5. List all provinces that have over 1 million people that require additional airports");
-            System.out.println("6. Exit\n");
-            System.out.print("Choose an option: ");
+        private static void MenuDisplay() {
+            if(ActiveMenu == 1){
+                System.out.println("""
+                =============================
+                          Main Menu
+                =============================
+                1. Daily Airport Management
+                2. Future Airport Management
+                3. Airline Management
+                4. Passenger Management
+                5. Exit
+                =============================
+                """);
+            }
+            else if (ActiveMenu == 2) {
+                System.out.println("""
+                    =============================
+                       Daily Airport Management
+                    =============================
+                    1. List the number of flights daily in xyz airport
+                    2. Update all aircraft out of service
+                    3. 
+                    4. 
+                    5. Back to main menu
+                    =============================
+                    """);
+            }
+            else if (ActiveMenu == 3) {
+                System.out.println("""
+                    =============================
+                      Future Airport Management
+                    =============================
+                    1. List all provinces that have over 1 million people and only 1 major airport
+                    2. Which planes cannot fly into/out of xyz airport
+                    3. 
+                    4. 
+                    5. Back to main menu
+                    =============================
+                    """);
+            } else if (ActiveMenu == 4) {
+                System.out.println("""
+                    =============================
+                      Airline Management
+                    =============================
+                    1. How many planes have a capacity greater than 180 passengers in each fleet
+                    2. Add new aircraft to it’s respective airline
+                    3. Delete any plane that is decommissioned or sold
+                    4. 
+                    5. Back to main menu
+                    =============================
+                    """);
+            } else if (ActiveMenu == 5) {
+                System.out.println("""
+                    =============================
+                      Passenger Management
+                    =============================
+                    1. List the number of passengers will use airport YYZ daily
+                    2. Delete a passenger from a flight
+                    3. Add a passenger to a flight
+                    4. List which passengers are flying today and tomorrow
+                    5. Back to main menu
+                    =============================
+                    """);
+            }
         }
 
         private static int getUserChoice(Scanner scanner) {
             while (true) {
+                System.out.print("Enter your choice: ");
                 if (scanner.hasNextInt()) {
+                    System.out.println();
                     return scanner.nextInt();
                 } else {
                     System.out.println("Invalid input. Please enter a number.");
@@ -136,61 +197,107 @@ public class ClientApplication {
         }
 
         private static void processUserChoice(int choice) {
-            switch (choice) {
-                case 1: // Working
-                    listAllAircraft();
-                    break;
-                case 2: // Working
-                    listAircraftCapacity();
-                    break;
-                case 3: // Working
-                    listAirportsByProvince();
-                    break;
-                case 4: // Not Working Yet
-                    listProvincesWithMultipleAirports();
-                    break;
-                case 5: // Not Working Yet
-                    listProvincesNeedingAirports();
-                    break;
-                case 6: // Working
-                    System.out.println("Exiting the application. Goodbye!");
-                    System.exit(0);
-                default:
-                    System.out.println("Invalid option. Please try again.");
+            if (ActiveMenu == 1) { // Main Menu Open
+                switch (choice) {
+                    case 1: // Open Daily Airport Menu
+                        ActiveMenu = 2;
+                        break;
+                    case 2: // Open Future Airport Menu
+                        ActiveMenu = 3;
+                        break;
+                    case 3: // Open Airline Management
+                        ActiveMenu = 4;
+                        break;
+                    case 4: // Open Passenger Management
+                        ActiveMenu = 5;
+                        break;
+                    case 5: // Exit
+                        break;
+                    default: // Invalid Choice
+                        break;
+                }
+            }
+            else if  (ActiveMenu == 2) { // Daily Airport Menu
+                switch (choice) {
+                    case 1: // List the number of flights daily in xyz airport
+                        break;
+                    case 2: // Update all aircraft out of service
+                        break;
+                    case 3: // Undecided
+                        break;
+                    case 4: // Undecided
+                        break;
+                    case 5: // Back To Main
+                        break;
+                    default: // Invalid Input
+                        break;
+                }
+            } else if (ActiveMenu == 3) { // Future Airport Menu
+                switch (choice) {
+                    case 1: // List all provinces that have over 1 million people and only 1 major airport
+                        airportsByPopulation();
+                        ActiveMenu = 1;
+                        break;
+                    case 2: // Which planes cannot fly into/out of xyz airport
+                        break;
+                    case 3: // Undecided
+                        break;
+                    case 4: // Undecided
+                        break;
+                    case 5: // Back To Main
+                        break;
+                    default: // Invalid Input
+                        break;
+                }
+            } else if (ActiveMenu == 4) { // Airline Management Menu
+                switch (choice) {
+                    case 1: // How many planes have a capacity greater than 180 passengers in each fleet
+                        break;
+                    case 2: // Add new aircraft to its respective airline
+                        break;
+                    case 3: // Delete any plane that is decommissioned or sold
+                        // If Based on id the following works
+                        System.out.println("Aircraft ID to delete");
+                        Scanner scanner = new Scanner(System.in);
+                        String idToDelete = Integer.toString(getUserChoice(scanner));
+                        deletingUnactiveAircrafts(idToDelete);
+                        ActiveMenu = 1;
+                        break;
+                    case 4: // Undecided
+                        break;
+                    case 5: // Back To Main
+                        break;
+                    default: // Invalid Input
+                        break;
+                }
+            } else if (ActiveMenu == 5) { // Passenger Management Menu
+                switch (choice) {
+                    case 1: // List the number of passengers will use airport YYZ daily
+                        break;
+                    case 2: // Delete a passenger from a flight
+                        break;
+                    case 3: // Add a passenger to a flight
+                        break;
+                    case 4: // List which passengers are flying today and tomorrow
+                        break;
+                    case 5: // Back To Main
+                        break;
+                    default: // Invalid Input
+                        break;
+                }
             }
         }
 
-        private static void listAllAircraft() {
-            String responseBody = sendGetRequest("/aircraft", "Aircraft");
+        private static void airportsByPopulation() {
+            String responseBody = sendGetRequest("/city", "City");
             if (responseBody != null) {
-                processAircraftAllData(responseBody);
+                CitiesProcessing.processCityAllData(responseBody, 1);
             }
         }
 
-
-        private static void listAircraftCapacity() {
-            String responseBody = sendGetRequest("/aircraft", "Aircraft capacity");
-            if (responseBody != null) {
-                processAircraftCapacityData(responseBody);
-            }
-        }
-
-        private static void listAirportsByProvince() {
-            String citiesResponse = sendGetRequest("/city", "Cities");
-
-            if (citiesResponse != null) {
-                processAirportsByProvince(citiesResponse);
-            }
-        }
-
-
-
-        private static void listProvincesWithMultipleAirports() {
-            sendGetRequest("/provinces/multipleAirports", "Provinces with multiple airports");
-        }
-
-        private static void listProvincesNeedingAirports() {
-            sendGetRequest("/provinces/needingAirports", "Provinces needing airports");
+        private static void deletingUnactiveAircrafts(String aircraftId) {
+            String endpoint = "/aircraft/" + aircraftId;
+            String responseBody = sendDeleteRequest(endpoint, "Aircraft Id");
         }
 
         private static String sendGetRequest(String endpoint, String resourceName) {
@@ -213,246 +320,26 @@ public class ClientApplication {
             }
         }
 
-        private static void processAircraftAllData(String jsonResponse) {
-            if (jsonResponse.length() < 2) {
-                System.out.println("No data received.");
-                return;
-            }
-            String trimmedResponse = jsonResponse.substring(1, jsonResponse.length() - 1);
-            String[] aircraftEntries = trimmedResponse.split("\\},\\{");
-            Map<String, List<String>> airlineModelsMap = new HashMap<>();
-            for (String entry : aircraftEntries) {
-                entry = entry.replaceAll("^\\{", "").replaceAll("\\}$", "");
-                String[] keyValuePairs = entry.split(",");
-                String airline = "";
-                String model = "";
-                for (String pair : keyValuePairs) {
-                    String[] keyAndValue = pair.split(":", 2);
-                    if (keyAndValue.length == 2) {
-                        String key = keyAndValue[0].trim().replaceAll("^\"|\"$", "");
-                        String value = keyAndValue[1].trim().replaceAll("^\"|\"$", "");
+        private static String sendDeleteRequest(String endpoint, String resourceName) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + endpoint))
+                        .DELETE()  // Use DELETE() method here
+                        .build();
 
-                        if (key.equals("airline")) {
-                            airline = value;
-                        } else if (key.equals("model")) {
-                            model = value;
-                        }
-                    }
-                }
-                if (!airline.isEmpty() && !model.isEmpty()) {
-                    List<String> models = airlineModelsMap.getOrDefault(airline, new ArrayList<>());
-                    if (!models.contains(model)) {
-                        models.add(model);
-                    }
-                    airlineModelsMap.put(airline, models);
-                }
-            }
-            for (Map.Entry<String, List<String>> entry : airlineModelsMap.entrySet()) {
-                String airlineName = entry.getKey();
-                List<String> models = entry.getValue();
-                System.out.println("Airline: " + airlineName);
-                System.out.println("Models:");
-                for (String modelName : models) {
-                    System.out.println("  - " + modelName);
-                }
-                System.out.println();
-            }
-        }
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        private static void processAircraftCapacityData(String jsonResponse) {
-            if (jsonResponse.length() < 2) {
-                System.out.println("No data received.");
-                return;
-            }
-            String trimmedResponse = jsonResponse.substring(1, jsonResponse.length() - 1);
-            String[] aircraftEntries = trimmedResponse.split("\\},\\{");
-            for (String entry : aircraftEntries) {
-                entry = entry.replaceAll("^\\{", "").replaceAll("\\}$", "");
-                String[] keyValuePairs = entry.split(",");
-                String capacity = "";
-                String model = "";
-                for (String pair : keyValuePairs) {
-                    String[] keyAndValue = pair.split(":", 2);
-                    if (keyAndValue.length == 2) {
-                        String key = keyAndValue[0].trim().replaceAll("^\"|\"$", "");
-                        String value = keyAndValue[1].trim().replaceAll("^\"|\"$", "");
-                        if (key.equals("model")) {
-                            model = value;
-                        } else if (key.equals("capacity")) {
-                            capacity = value;
-                        }
-                    }
-                }
-                if (!model.isEmpty() && !capacity.isEmpty()) {
-                    System.out.println(model + " - " + capacity);
-                }
-            }
-        }
-
-        private static void processAirportsByProvince(String citiesJson) {
-            Scanner scanner = new Scanner(System.in);
-
-            Map<String, List<String>> provinceToAirportsMap = new HashMap<>();
-
-            parseCitiesData(citiesJson, provinceToAirportsMap);
-
-            System.out.println("Available provinces:");
-            for (String province : provinceToAirportsMap.keySet()) {
-                String abbreviation = PROVINCE_ABBREVIATIONS.get(province);
-                if (abbreviation != null) {
-                    System.out.println(" - " + province + " (" + abbreviation + ")");
+                if (response.statusCode() == 200 || response.statusCode() == 204) {
+                    System.out.println("Successfully deleted " + resourceName + ": " + endpoint.substring(endpoint.lastIndexOf('/') + 1));
+                    return response.body();
                 } else {
-                    System.out.println(" - " + province);
-                }
-            }
-
-            System.out.print("Enter the province name or abbreviation (e.g., 'Ontario' or 'ON', or 'All' to display all provinces): ");
-            String provinceInput = scanner.nextLine().trim();
-
-            if (provinceInput.equalsIgnoreCase("All")) {
-                displayAirportsByProvince(provinceToAirportsMap);
-            } else {
-                String provinceName = null;
-                for (Map.Entry<String, String> entry : PROVINCE_ABBREVIATIONS.entrySet()) {
-                    String fullName = entry.getKey();
-                    String abbreviation = entry.getValue();
-
-                    if (fullName.equalsIgnoreCase(provinceInput) || abbreviation.equalsIgnoreCase(provinceInput)) {
-                        provinceName = fullName;
-                        break;
-                    }
-                }
-
-                if (provinceName == null) {
-                    System.out.println("Province not found: " + provinceInput);
-                } else {
-                    Map<String, List<String>> filteredMap = new HashMap<>();
-                    List<String> airports = provinceToAirportsMap.get(provinceName);
-                    if (airports != null) {
-                        filteredMap.put(provinceName, airports);
-                        displayAirportsByProvince(filteredMap);
-                    } else {
-                        System.out.println("No airports found in " + provinceName + ".");
-                    }
-                }
-            }
-        }
-
-
-
-
-        private static void parseCitiesData(String citiesJson, Map<String, List<String>> provinceToAirportsMap) {
-            if (citiesJson.length() < 2) {
-                System.out.println("No city data received.");
-                return;
-            }
-
-            String trimmedResponse = citiesJson.substring(1, citiesJson.length() - 1);
-
-            String[] cityEntries = trimmedResponse.split("\\},\\{");
-
-            for (String entry : cityEntries) {
-                if (!entry.startsWith("{")) {
-                    entry = "{" + entry;
-                }
-                if (!entry.endsWith("}")) {
-                    entry = entry + "}";
-                }
-
-                String province = extractValue(entry, "province");
-
-                String airportsData = extractValue(entry, "airports");
-                List<String> airportsList = new ArrayList<>();
-
-                if (airportsData != null && !airportsData.equals("[]")) {
-                    airportsData = airportsData.substring(1, airportsData.length() - 1);
-
-                    String[] airportEntries = airportsData.split("\\},\\{");
-
-                    for (String airportEntry : airportEntries) {
-                        if (!airportEntry.startsWith("{")) {
-                            airportEntry = "{" + airportEntry;
-                        }
-                        if (!airportEntry.endsWith("}")) {
-                            airportEntry = airportEntry + "}";
-                        }
-
-                        String airportName = extractValue(airportEntry, "name");
-                        String iataCode = extractValue(airportEntry, "iata_code");
-
-                        if (airportName != null && iataCode != null) {
-                            String airportInfo = airportName + " (" + iataCode + ")";
-                            airportsList.add(airportInfo);
-                        }
-                    }
-                }
-
-                if (province != null && !airportsList.isEmpty()) {
-                    List<String> existingAirports = provinceToAirportsMap.getOrDefault(province, new ArrayList<>());
-                    existingAirports.addAll(airportsList);
-                    provinceToAirportsMap.put(province, existingAirports);
-                }
-            }
-        }
-
-        private static String extractValue(String json, String key) {
-            String keyPattern = "\"" + key + "\":";
-            int keyIndex = json.indexOf(keyPattern);
-            if (keyIndex == -1) {
-                return null;
-            }
-            int valueStart = keyIndex + keyPattern.length();
-
-            char firstChar = json.charAt(valueStart);
-            if (firstChar == '\"') {
-                int valueEnd = json.indexOf("\"", valueStart + 1);
-                if (valueEnd == -1) {
+                    System.out.println("Error: Received status code " + response.statusCode());
                     return null;
                 }
-                return json.substring(valueStart + 1, valueEnd);
-            } else if (firstChar == '[') {
-                int brackets = 1;
-                int i = valueStart + 1;
-                while (i < json.length() && brackets > 0) {
-                    if (json.charAt(i) == '[') brackets++;
-                    else if (json.charAt(i) == ']') brackets--;
-                    i++;
-                }
-                return json.substring(valueStart, i);
-            } else if (firstChar == '{') {
-                int braces = 1;
-                int i = valueStart + 1;
-                while (i < json.length() && braces > 0) {
-                    if (json.charAt(i) == '{') braces++;
-                    else if (json.charAt(i) == '}') braces--;
-                    i++;
-                }
-                return json.substring(valueStart, i);
-            } else {
-                int valueEnd = json.indexOf(",", valueStart);
-                if (valueEnd == -1) {
-                    valueEnd = json.indexOf("}", valueStart);
-                }
-                if (valueEnd == -1) {
-                    valueEnd = json.length();
-                }
-                return json.substring(valueStart, valueEnd).trim();
+            } catch (Exception e) {
+                System.out.println("Error deleting " + resourceName + ": " + e.getMessage());
+                return null;
             }
         }
-
-
-        private static void displayAirportsByProvince(Map<String, List<String>> provinceToAirportsMap) {
-            for (Map.Entry<String, List<String>> entry : provinceToAirportsMap.entrySet()) {
-                String province = entry.getKey();
-                List<String> airports = entry.getValue();
-
-                System.out.println(province + ":");
-                for (String airport : airports) {
-                    System.out.println("    - " + airport);
-                }
-                System.out.println();
-            }
-        }
-
     }
 }
