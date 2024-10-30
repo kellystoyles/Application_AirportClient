@@ -231,6 +231,7 @@ public class ClientApplication {
                         String responseBody = sendGetRequest("/airports", "Airport");
                         AirportProcessing.processAirportDataAll(responseBody, 99, null, null);
                     default: // Invalid Choice
+                        System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
             }
@@ -251,6 +252,7 @@ public class ClientApplication {
                     case 5: // Back To Main
                         break;
                     default: // Invalid Input
+                        System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
             } else if (ActiveMenu == 3) { // Future Airport Menu
@@ -270,6 +272,7 @@ public class ClientApplication {
                     case 5: // Back To Main
                         break;
                     default: // Invalid Input
+                        System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
             } else if (ActiveMenu == 4) { // Airline Management Menu
@@ -292,6 +295,7 @@ public class ClientApplication {
                     case 5: // Back To Main
                         break;
                     default: // Invalid Input
+                        System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
             } else if (ActiveMenu == 5) { // Passenger Management Menu
@@ -307,6 +311,7 @@ public class ClientApplication {
                     case 5: // Back To Main
                         break;
                     default: // Invalid Input
+                        System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
             }
