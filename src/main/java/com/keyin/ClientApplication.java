@@ -223,10 +223,6 @@ public class ClientApplication {
                         break;
                     case 5: // Exit
                         break;
-                    case 99:
-                        String responseBody = sendGetRequest("/city", "City");
-                        CitiesProcessing.processCityAllData(responseBody,99);
-                        break;
                     default: // Invalid Choice
                         System.out.println("Invalid input. Please enter a valid choice.");
                         break;
@@ -243,7 +239,7 @@ public class ClientApplication {
                     case 2: // List the number of passengers will use airport YYZ daily
                         break;
                     case 3: // Lockdown
-                        break;
+                        lockdown();
                     case 4: // Back To Main
                         break;
                     default: // Invalid Input
@@ -260,7 +256,7 @@ public class ClientApplication {
                         aircraftAccess();
                         ActiveMenu = 1;
                         break;
-                    case 3: // Undecided
+                    case 3: // Aircraft Service Dates
                         break;
                     case 5: // Back To Main
                         break;
@@ -274,6 +270,7 @@ public class ClientApplication {
                         airlineNumOfLrgCapacity();
                         break;
                     case 2: // Add new aircraft
+                        addNewAircraft(); // Not Complete needs re looking after the data is final
                         break;
                     case 3: // Delete any plane that is decommissioned or sold
                         // If Based on id the following works
@@ -306,6 +303,32 @@ public class ClientApplication {
             }
         }
 
+        private static void lockdown(){
+            System.out.println("\n" + "#".repeat(51));
+            System.out.println("#".repeat(51));
+            System.out.println("#".repeat(20) + " ".repeat(11) + "#".repeat(20));
+            System.out.println("#".repeat(20) + " LOCK DOWN " + "#".repeat(20));
+            System.out.println("#".repeat(20) + " TO  LEAVE " + "#".repeat(20));
+            System.out.println("#".repeat(20) + " TYPE EXIT " + "#".repeat(20));
+            System.out.println("#".repeat(20) + " ".repeat(11) + "#".repeat(20));
+            System.out.println("#".repeat(51));
+            System.out.println("#".repeat(51) + "\n");
+            Scanner scanner = new Scanner(System.in);
+            String input;
+
+            while (true) {
+                System.out.print(">> "); // Prompt symbol for user input
+                input = getUserChoiceStr(scanner).trim().toUpperCase(); // Read and process input
+
+                if (input.equals("EXIT")) {
+                    System.out.println("Exiting lockdown. Returning to main menu. \n");
+                    break; // Exit the loop and return to the main menu
+                } else {
+                    System.out.println("Invalid input. Please type EXIT to leave lockdown.");
+                }
+            }
+        }
+
         private static void airportsByPopulation() {
             String responseBody = sendGetRequest("/city", "City");
             if (responseBody != null) {
@@ -319,6 +342,45 @@ public class ClientApplication {
                 AircraftProccessing.processAircraftAllData(responseBody, 3);
             }
         }
+
+        private static void addNewAircraft() {
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Add New Aircraft");
+            System.out.println("================");
+
+            System.out.print("Enter Airline Name: ");
+            String airline = scanner.nextLine();
+
+            System.out.print("Enter Aircraft Model: ");
+            String model = scanner.nextLine();
+
+            System.out.print("Enter Aircraft Capacity: ");
+            int capacity = getUserChoiceInt(scanner);
+
+            // Needs Status Value Might be best to auto assign as "Active"
+
+            // Need to add Airport Access list
+
+            System.out.print("Enter Last Maintenance Date (e.g., 2024-12-01): ");
+            String maintenanceSchedule = getUserChoiceStr(scanner);
+
+            // Construct JSON request body
+            String requestBody = String.format(
+                    "{ \"airline\": \"%s\", \"model\": \"%s\", \"capacity\": %d, \"maintenanceSchedule\": \"%s\" }",
+                    airline, model, capacity, maintenanceSchedule
+            );
+
+            // Send POST request to create new aircraft
+            String response = sendPostRequest("/aircraft", requestBody, "Aircraft");
+
+            if (response != null) {
+                // Optionally process the response, e.g., parse the created aircraft details
+                System.out.println("New aircraft added successfully.");
+            } else {
+                System.out.println("Failed to add new aircraft.");
+            }
+        }
+
 
         private static void aircraftAccess(){
             String responseBody = sendGetRequest("/airports", "Airports");
@@ -427,6 +489,31 @@ public class ClientApplication {
                 return null;
             }
         }
+
+        private static String sendPostRequest(String endpoint, String requestBody, String resourceName) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + endpoint))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200 || response.statusCode() == 201) {
+                    System.out.println("Successfully created " + resourceName + ": " + response.body());
+                    return response.body();
+                } else {
+                    System.out.println("Error: Received status code " + response.statusCode() + " while creating " + resourceName);
+                    System.out.println("Response Body: " + response.body());
+                    return null;
+                }
+            } catch (Exception e) {
+                System.out.println("Error creating " + resourceName + ": " + e.getMessage());
+                return null;
+            }
+        }
+
 
     }
 }
