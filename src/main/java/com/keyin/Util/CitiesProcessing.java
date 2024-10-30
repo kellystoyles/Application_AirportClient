@@ -82,6 +82,9 @@ public class CitiesProcessing {
                 provinceData.addAirports(airports);
                 provinceDataMap.put(province, provinceData);
             }
+            if (CallReason == 99) {
+                System.out.println(province + " --- " + provincePopulation);
+            }
         }
 
         if (CallReason == 1) {

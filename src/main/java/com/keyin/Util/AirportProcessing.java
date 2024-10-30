@@ -66,12 +66,8 @@ public class AirportProcessing {
                 aircraftIdList.addAll(aircraft);
                 break;
             }
-            // Testing Call Reason
             if (CallReason == 99){
-                System.out.println("ID: " + airportId);
-                System.out.println("IATA: " + iata_code);
-                System.out.println("Name: " + name);
-                System.out.println("Aircrafts: " + aircraft);
+
             }
         }
     }

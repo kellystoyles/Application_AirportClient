@@ -107,7 +107,7 @@ public class ClientApplication {
                     MenuDisplay();
                     int choice = getUserChoiceInt(scanner);
                     processUserChoice(choice);
-                    if (choice == 5 && ActiveMenu != 1) {
+                    if (choice == 4 && ActiveMenu != 1) {
                         ActiveMenu = 1;
                     } else if (choice == 5 && ActiveMenu == 1) {
                         System.out.println("Exiting the application. Goodbye!");
@@ -138,11 +138,10 @@ public class ClientApplication {
                     =============================
                        Daily Airport Management
                     =============================
-                    1. List the number of flights daily in xyz airport
-                    2. Update all aircraft out of service
-                    3. 
-                    4. 
-                    5. Back to main menu
+                    1. Update an aircraft out of service
+                    2. List the number of passengers will use airport YYZ daily
+                    3. Lockdown
+                    4. Back to main menu
                     =============================
                     """);
             }
@@ -153,9 +152,8 @@ public class ClientApplication {
                     =============================
                     1. List all provinces that have over 1 million people and only 1 major airport
                     2. Which planes can fly into/out of xyz airport
-                    3. 
-                    4. 
-                    5. Back to main menu
+                    3. Aircraft Service Dates
+                    4. Back to main menu
                     =============================
                     """);
             } else if (ActiveMenu == 4) {
@@ -164,10 +162,9 @@ public class ClientApplication {
                       Airline Management
                     =============================
                     1. How many planes have a capacity greater than 180 passengers in each fleet
-                    2. Add new aircraft to it’s respective airline
+                    2. Add new aircraft
                     3. Delete any plane that is decommissioned or sold
-                    4. 
-                    5. Back to main menu
+                    4. Back to main menu
                     =============================
                     """);
             } else if (ActiveMenu == 5) {
@@ -175,11 +172,10 @@ public class ClientApplication {
                     =============================
                       Passenger Management
                     =============================
-                    1. List the number of passengers will use airport YYZ daily
+                    1. Add a passenger to a flight
                     2. Delete a passenger from a flight
-                    3. Add a passenger to a flight
-                    4. List which passengers are flying today and tomorrow
-                    5. Back to main menu
+                    3. Checking in
+                    4. Back to main menu
                     =============================
                     """);
             }
@@ -228,8 +224,9 @@ public class ClientApplication {
                     case 5: // Exit
                         break;
                     case 99:
-                        String responseBody = sendGetRequest("/airports", "Airport");
-                        AirportProcessing.processAirportDataAll(responseBody, 99, null, null);
+                        String responseBody = sendGetRequest("/city", "City");
+                        CitiesProcessing.processCityAllData(responseBody,99);
+                        break;
                     default: // Invalid Choice
                         System.out.println("Invalid input. Please enter a valid choice.");
                         break;
@@ -237,19 +234,17 @@ public class ClientApplication {
             }
             else if  (ActiveMenu == 2) { // Daily Airport Menu
                 switch (choice) {
-                    case 1: // List the number of flights daily in xyz airport
-                        break;
-                    case 2: // Update all aircraft out of service #Implemented but untested#
+                    case 1: // Update all aircraft out of service #Implemented but untested#
                         System.out.println("Enter the Aircraft ID for the aircraft you want to update");
                         Scanner scanner = new Scanner(System.in);
                         String endpointId = Integer.toString(getUserChoiceInt(scanner));
                         updateAircraftStatus(endpointId);
                         break;
-                    case 3: // Undecided
+                    case 2: // List the number of passengers will use airport YYZ daily
                         break;
-                    case 4: // Undecided
+                    case 3: // Lockdown
                         break;
-                    case 5: // Back To Main
+                    case 4: // Back To Main
                         break;
                     default: // Invalid Input
                         System.out.println("Invalid input. Please enter a valid choice.");
@@ -267,8 +262,6 @@ public class ClientApplication {
                         break;
                     case 3: // Undecided
                         break;
-                    case 4: // Undecided
-                        break;
                     case 5: // Back To Main
                         break;
                     default: // Invalid Input
@@ -280,7 +273,7 @@ public class ClientApplication {
                     case 1: // How many planes have a capacity greater than 180 passengers in each fleet
                         airlineNumOfLrgCapacity();
                         break;
-                    case 2: // Add new aircraft to its respective airline
+                    case 2: // Add new aircraft
                         break;
                     case 3: // Delete any plane that is decommissioned or sold
                         // If Based on id the following works
@@ -289,8 +282,6 @@ public class ClientApplication {
                         String idToDelete = Integer.toString(getUserChoiceInt(scanner));
                         deletingUnactiveAircrafts(idToDelete);
                         ActiveMenu = 1;
-                        break;
-                    case 4: // Undecided
                         break;
                     case 5: // Back To Main
                         break;
@@ -305,8 +296,6 @@ public class ClientApplication {
                     case 2: // Delete a passenger from a flight
                         break;
                     case 3: // Add a passenger to a flight
-                        break;
-                    case 4: // List which passengers are flying today and tomorrow
                         break;
                     case 5: // Back To Main
                         break;
