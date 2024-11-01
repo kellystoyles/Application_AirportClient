@@ -236,7 +236,8 @@ public class ClientApplication {
                         String endpointId = Integer.toString(getUserChoiceInt(scanner));
                         updateAircraftStatus(endpointId);
                         break;
-                    case 2: // List the number of passengers will use airport YYZ daily
+                    case 2: // List the number of passengers will use airport YHZ daily
+                       PassengerCountForAirport();
                         break;
                     case 3: // Lockdown
                         lockdown();
@@ -288,11 +289,14 @@ public class ClientApplication {
                 }
             } else if (ActiveMenu == 5) { // Passenger Management Menu
                 switch (choice) {
-                    case 1: // List the number of passengers will use airport YYZ daily
+                    case 1: // List the number of passengers will use airport YHZ daily
+                        getPassengerCountForAirport(String airportCode)
                         break;
                     case 2: // Delete a passenger from a flight
+                        deletePassenger(Long id)
                         break;
                     case 3: // Add a passenger to a flight
+                        addPassenger(Passenger passenger);
                         break;
                     case 5: // Back To Main
                         break;
