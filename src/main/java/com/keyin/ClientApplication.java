@@ -21,23 +21,9 @@ public class ClientApplication {
     public static class AirportClientApp {
         private static Integer ActiveMenu;
         private static String BASE_URL;
-        private static final HttpClient httpClient = HttpClient.newHttpClient();
-        private static final Map<String, String> PROVINCE_ABBREVIATIONS = new HashMap<>();
-        static {
-            PROVINCE_ABBREVIATIONS.put("Newfoundland and Labrador", "NL");
-            PROVINCE_ABBREVIATIONS.put("Prince Edward Island", "PE");
-            PROVINCE_ABBREVIATIONS.put("Nova Scotia", "NS");
-            PROVINCE_ABBREVIATIONS.put("New Brunswick", "NB");
-            PROVINCE_ABBREVIATIONS.put("Quebec", "QC");
-            PROVINCE_ABBREVIATIONS.put("Ontario", "ON");
-            PROVINCE_ABBREVIATIONS.put("Manitoba", "MB");
-            PROVINCE_ABBREVIATIONS.put("Saskatchewan", "SK");
-            PROVINCE_ABBREVIATIONS.put("Alberta", "AB");
-            PROVINCE_ABBREVIATIONS.put("British Columbia", "BC");
-            PROVINCE_ABBREVIATIONS.put("Yukon", "YT");
-            PROVINCE_ABBREVIATIONS.put("Northwest Territories", "NT");
-            PROVINCE_ABBREVIATIONS.put("Nunavut", "NU");
-        }
+        private static HttpClient httpClient = HttpClient.newHttpClient();
+
+
 
         static {
             try {
@@ -347,9 +333,12 @@ public class ClientApplication {
             System.out.print("Enter Email: ");
             String email = scanner.nextLine();
 
+            System.out.print("Enter City: ");
+            Integer city = scanner.nextInt();
+
             String requestBody = String.format(
-                    "{ \"first_name\": \"%s\", \"last_name\": \"%s\", \"email\": \"%s\" }",
-                    firstName, lastName, email
+                    "{ \"firstName\": \"%s\", \"lastName\": \"%s\", \"email\": \"%s\", \"city\": \"%d\"}",
+                    firstName, lastName, email, city
             );
 
             String response = sendPostRequest("/passenger", requestBody, "Passenger");
@@ -405,14 +394,14 @@ public class ClientApplication {
 
 
         private static void airportsByPopulation() {
-            String responseBody = sendGetRequest("/city", "City");
+            String responseBody = sendGetRequest("/city", "City", BASE_URL);
             if (responseBody != null) {
                 JsonParser.parseCities(responseBody, 1);
             }
         }
 
         private static void airlineNumOfLrgCapacity() {
-            String responseBody = sendGetRequest("/aircraft", "Aircraft");
+            String responseBody = sendGetRequest("/aircraft", "Aircraft", BASE_URL);
             if (responseBody != null) {
                 JsonParser.parseAircraft(responseBody, 3);
             }
@@ -430,7 +419,7 @@ public class ClientApplication {
             String model = scanner.nextLine();
 
             System.out.print("Enter Aircraft Capacity: ");
-            int capacity = getUserChoiceInt(scanner);
+            Integer capacity = scanner.nextInt();
 
             String status = "Active";
 
@@ -454,7 +443,7 @@ public class ClientApplication {
             Scanner scanner = new Scanner(System.in);
             System.out.println("Enter ID for the Aircraft");
             String aircraftId = getUserChoiceStr(scanner);
-            String responseBody = sendGetRequest("/aircraft/" + aircraftId, "Aircraft");
+            String responseBody = sendGetRequest("/aircraft/" + aircraftId, "Aircraft", BASE_URL);
             if (responseBody != null){
                 JsonParser.parseAircraft(responseBody, 4);
             }
@@ -464,14 +453,14 @@ public class ClientApplication {
             System.out.println("IATA Code for the airport");
             Scanner scanner = new Scanner(System.in);
             String iataToFind = getUserChoiceStr(scanner).toUpperCase();
-            String responseBody = sendGetRequest("/passenger/count/" + iataToFind, "Airports");
+            String responseBody = sendGetRequest("/passenger", "Passengers", BASE_URL);
             if (responseBody != null) {
                 JsonParser.parseAirports(responseBody, 4, iataToFind);
             }
         }
 
         private static void aircraftAccess(){
-            String responseBodyAirport = sendGetRequest("/airports", "Airports");
+            String responseBodyAirport = sendGetRequest("/airports", "Airports", BASE_URL);
             System.out.println("IATA Code for the airport");
             Scanner scanner = new Scanner(System.in);
             String iataToFind = getUserChoiceStr(scanner).toUpperCase();
@@ -481,7 +470,7 @@ public class ClientApplication {
         }
 
         private static void updateAircraftStatus(String id) {
-            String responseBody = sendGetRequest("/aircraft/" + id, "Aircraft/" + id);
+            String responseBody = sendGetRequest("/aircraft/" + id, "Aircraft/" + id, BASE_URL);
             String requestBody = "Undefined";
             if (responseBody != null) {
                 System.out.println("Enter A, D, or S for (Active, Decommissioned, Sold) respectively ");
@@ -508,14 +497,13 @@ public class ClientApplication {
             String responseBody = sendDeleteRequest(endpoint, "Aircraft Id");
         }
 
-        private static String sendGetRequest(String endpoint, String resourceName) {
+        public static String sendGetRequest(String endpoint, String resourceName, String baseURL) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(BASE_URL + endpoint))
+                        .uri(URI.create(baseURL + endpoint))
                         .GET()
                         .build();
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
                 if (response.statusCode() == 200) {
                     return response.body();
                 } else {
@@ -524,6 +512,7 @@ public class ClientApplication {
                 }
             } catch (Exception e) {
                 System.out.println("Error fetching " + resourceName + ": " + e.getMessage());
+                e.printStackTrace(); // Print stack trace for more detailed debugging
                 return null;
             }
         }

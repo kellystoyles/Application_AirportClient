@@ -152,4 +152,17 @@ public class JsonParser {
             this.lastServiceDate = lastServiceDate;
         }
     }
+
+    public static void parsePassenger(String jsonResponse, Integer CallReason, String IATA) {
+        try {
+            JsonNode passengerArray = objectMapper.readTree(jsonResponse);
+
+            for (JsonNode passengerNode : passengerArray) {
+                List<String> airportsVisited = passengerNode.findValuesAsText("airportsVisited");
+            }
+
+        } catch (IOException e) {
+            System.out.println("Error parsing aircraft JSON: " + e.getMessage());
+        }
+    }
 }
