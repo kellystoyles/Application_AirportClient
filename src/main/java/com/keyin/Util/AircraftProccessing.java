@@ -13,7 +13,7 @@ Call Reason Codes
 */
 
 public class AircraftProccessing {
-    public static void processAircraftAllData(String jsonResponse, Integer CallReason) {
+    public static void processAircraftAllData(String jsonResponse, Integer CallReason, List<String> aircraftList) {
 
         // Ensuring the Data Received is not Empty 2 characters being []
         if (jsonResponse.length() < 2) {
@@ -81,6 +81,14 @@ public class AircraftProccessing {
                 airlineModelsMap.put(airline, models);
             }
 
+            if (CallReason == 2) {
+                for (String item : aircraftList) {
+                    if (item.equals(Integer.toString(aircraftId))) {
+                        System.out.println("    - " + model + " (" + aircraftId + ")");
+                    }
+                }
+            }
+
             if (CallReason == 3 && capacity > 180 && !airline.isEmpty()) {
                 airlineCapacityCount.put(airline, airlineCapacityCount.getOrDefault(airline, 0) + 1);
             }
@@ -96,9 +104,6 @@ public class AircraftProccessing {
                 }
                 System.out.println();
             }
-        }
-        if (CallReason == 2){
-
         }
         if (CallReason == 3){
             System.out.println("Planes with capacity > 180 passengers by airline: \n");

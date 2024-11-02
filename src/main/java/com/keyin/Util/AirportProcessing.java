@@ -2,37 +2,31 @@ package com.keyin.Util;
 
 import java.util.ArrayList;
 import java.util.List;
-/*
-Call Reason Codes
-1 - (Option 2.2) Which planes can fly into/out of xyz airport
-99 - Testing Purposes
-*/
-public class AirportProcessing {
-    public static void processAirportDataAll(String jsonResponse, Integer CallReason, String targetIATAcode, List<String> aircraftIdList){
 
-        // Ensuring the Data Received is not Empty 2 characters being []
+public class AirportProcessing {
+    public static void processAirportDataAll(String jsonResponse, Integer CallReason, String targetIATAcode) {
+
+        // Ensure the data received is not empty
         if (jsonResponse.length() < 2) {
             System.out.println("No data received.");
             return;
         }
 
-        // Removes the Surrounding Brackets "[" and "]"
+        // Remove the surrounding brackets "[" and "]"
         String trimmedResponse = jsonResponse.substring(1, jsonResponse.length() - 1);
 
-        // Seperates the Entrys via seperating on },{ each element is now one "airport"
+        // Split each airport entry by "},{", treating each airport JSON object separately
         String[] airportEntries = trimmedResponse.split("\\},\\{");
 
-        // Splits entrys into the KeyValue pairs via the comma seperating each one
         for (String entry : airportEntries) {
             entry = entry.replaceAll("^\\{", "").replaceAll("\\}$", "");
-            String[] keyValuePairs = entry.split(",");
+            String[] keyValuePairs = entry.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); // Split by commas outside of quotes
 
             Integer airportId = 0;
             String name = "";
             String iata_code = "";
             List<String> aircraft = new ArrayList<>();
 
-            // Assigning Keys and Values based on the seperating ":" also removes surrounding double quotes
             for (String pair : keyValuePairs) {
                 String[] keyAndValue = pair.split(":", 2);
                 if (keyAndValue.length == 2) {
@@ -40,7 +34,7 @@ public class AirportProcessing {
                     String value = keyAndValue[1].trim().replaceAll("^\"|\"$", "");
 
                     if (key.equals("iata_code")) {
-                        iata_code = value;
+                        iata_code = value.toUpperCase(); // Normalize IATA code for comparison
                     } else if (key.equals("name")) {
                         name = value;
                     } else if (key.equals("airportId")) {
@@ -50,25 +44,74 @@ public class AirportProcessing {
                             System.out.println("Invalid airportId value: " + value);
                             airportId = 0;
                         }
-                    }else if (key.equals("aircraft")) {
-                        // Removing brackets and splitting the list
-                        String aircraftList = value.replaceAll("^\\[|\\]$", "");
-                        String[] aircraftArray = aircraftList.split(",");
-                        for (String aircrafts : aircraftArray) {
-                            aircraft.add(aircrafts.trim().replaceAll("^\"|\"$", ""));
+                    } else if (key.equals("aircraft")) {
+                        System.out.println("Parsing aircraft list for airport: " + name); // Debug print
+
+                        // Strip the outer brackets of the aircraft array and split by "},{" to separate aircraft objects
+                        if (value.startsWith("[") && value.endsWith("]")) {
+                            String aircraftList = value.substring(1, value.length() - 1).trim();
+                            String[] aircraftObjects = aircraftList.split("\\},\\s*\\{");
+
+                            for (String aircraftObj : aircraftObjects) {
+                                aircraftObj = aircraftObj.replaceAll("^\\{|\\}$", "").trim();
+
+                                Integer aircraftId = null;
+                                String model = "";
+
+                                // Split properties within each aircraft object
+                                String[] aircraftProperties = aircraftObj.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+                                for (String property : aircraftProperties) {
+                                    String[] propKeyValue = property.split(":", 2);
+                                    if (propKeyValue.length == 2) {
+                                        String propKey = propKeyValue[0].trim().replaceAll("^\"|\"$", "");
+                                        String propValue = propKeyValue[1].trim().replaceAll("^\"|\"$", "");
+
+                                        if (propKey.equals("aircraftId")) {
+                                            try {
+                                                aircraftId = Integer.parseInt(propValue);
+                                            } catch (NumberFormatException e) {
+                                                System.out.println("Invalid aircraftId value: " + propValue);
+                                            }
+                                        } else if (propKey.equals("model")) {
+                                            model = propValue;
+                                        }
+                                    }
+                                }
+
+                                // Add each parsed aircraft to the list
+                                if (aircraftId != null && !model.isEmpty()) {
+                                    System.out.println("Adding aircraft: " + model + " (" + aircraftId + ")"); // Debug print
+                                    aircraft.add(model + " (" + aircraftId + ")");
+                                }
+                            }
                         }
                     }
                 }
+            }
 
-            }
-            if (CallReason == 1 && iata_code.equals(targetIATAcode)) {
-                System.out.println(name+" "+iata_code+":");
-                aircraftIdList.addAll(aircraft);
-                break;
-            }
-            if (CallReason == 99){
+            // Display output when CallReason matches and IATA code is correct
+            if (CallReason == 1 && iata_code.equals(targetIATAcode.toUpperCase())) {
+                System.out.println(name + " " + iata_code + ":");
 
+                if (!aircraft.isEmpty()) {
+                    for (String aircraftDetail : aircraft) {
+                        System.out.println("    - " + aircraftDetail);
+                    }
+                } else {
+                    System.out.println("No aircraft data available for " + name + " " + iata_code);
+                }
+                break; // Stop after finding the target airport
             }
+
+            // Testing output for each airport if CallReason is 99
+            if (CallReason == 99) {
+                System.out.println("Aircraft list for " + name + ": " + aircraft); // Debug print
+            }
+        }
+
+        // Final debug print of the entire JSON response (for troubleshooting)
+        if (CallReason == 99) {
+            System.out.println("Full JSON response: " + jsonResponse);
         }
     }
 }
