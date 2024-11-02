@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 public class JsonParser {
@@ -87,35 +88,26 @@ public class JsonParser {
 
     public static void parseAircraft(String jsonResponse, Integer CallReason) {
         try {
-            JsonNode aircraftArray = objectMapper.readTree(jsonResponse);
+            JsonNode rootNode = objectMapper.readTree(jsonResponse);
             Map<String, List<AircraftData>> airlineAircraftMap = new HashMap<>();
 
-            for (JsonNode aircraftNode : aircraftArray) {
-                String model = aircraftNode.path("model").asText();
-                String airline = aircraftNode.path("airline").asText();
-                int capacity = aircraftNode.path("capacity").asInt();
-                LocalDate lastServiceDate = LocalDate.parse(aircraftNode.path("lastServiceDate").asText());
-
-                if (CallReason == 3 && capacity > 180) {
-                    List<AircraftData> aircraftList = airlineAircraftMap.getOrDefault(airline, new ArrayList<>());
-                    aircraftList.add(new AircraftData(model, capacity, lastServiceDate));
-                    airlineAircraftMap.put(airline, aircraftList);
+            // Process nodes based on whether the root is an array or a single object
+            if (rootNode.isArray()) {
+                for (JsonNode aircraftNode : rootNode) {
+                    processAircraftNode(aircraftNode, airlineAircraftMap, CallReason);
                 }
-
-                if (CallReason == 4) {
-                    List<AircraftData> aircraftList = airlineAircraftMap.getOrDefault(airline, new ArrayList<>());
-                    aircraftList.add(new AircraftData(model, capacity, lastServiceDate));
-                    airlineAircraftMap.put(airline, aircraftList);
-                }
+            } else {
+                processAircraftNode(rootNode, airlineAircraftMap, CallReason);
             }
 
+            // Display results for CallReason 3 and 4
             if (CallReason == 3) {
+                System.out.println("\nAirlines with aircraft having capacity greater than 180:");
                 for (Map.Entry<String, List<AircraftData>> entry : airlineAircraftMap.entrySet()) {
                     String airlineName = entry.getKey();
                     List<AircraftData> aircraftList = entry.getValue();
 
                     System.out.println("\nAirline: " + airlineName + " (" + aircraftList.size() + ")");
-
                     for (AircraftData aircraft : aircraftList) {
                         System.out.println("    - " + aircraft.model + " (" + aircraft.capacity + ")");
                     }
@@ -126,13 +118,17 @@ public class JsonParser {
                 for (Map.Entry<String, List<AircraftData>> entry : airlineAircraftMap.entrySet()) {
                     String airlineName = entry.getKey();
                     List<AircraftData> aircraftList = entry.getValue();
-
                     System.out.println("\nAirline: " + airlineName);
 
                     for (AircraftData aircraft : aircraftList) {
-                        LocalDate nextServiceDate = aircraft.lastServiceDate.plusDays(30);
-                        System.out.println("Last Service: " + aircraft.model + " - " + aircraft.lastServiceDate);
-                        System.out.println("Service By: " + aircraft.model + " - " + nextServiceDate);
+                        if (aircraft.lastServiceDate != null) {
+                            LocalDate nextServiceDate = aircraft.lastServiceDate.plusDays(30);
+                            System.out.println("Last Service: " + aircraft.model + " - " + aircraft.lastServiceDate);
+                            System.out.println("Service By: " + aircraft.model + " - " + nextServiceDate);
+                        } else {
+                            System.out.println("Last Service: " + aircraft.model + " - Not Available");
+                            System.out.println("Service By: " + aircraft.model + " - Not Available");
+                        }
                     }
                 }
             }
@@ -140,6 +136,35 @@ public class JsonParser {
             System.out.println("Error parsing aircraft JSON: " + e.getMessage());
         }
     }
+
+
+
+    private static void processAircraftNode(JsonNode aircraftNode, Map<String, List<AircraftData>> airlineAircraftMap, Integer CallReason) {
+        String model = aircraftNode.path("model").asText();
+        String airline = aircraftNode.path("airline").asText();
+        int capacity = aircraftNode.path("capacity").asInt();
+        LocalDate lastServiceDate = null;
+
+        // Safely parse lastServiceDate
+        String dateText = aircraftNode.path("lastServiceDate").asText();
+        if (dateText != null && !dateText.equals("null") && !dateText.isEmpty()) {
+            try {
+                lastServiceDate = LocalDate.parse(dateText);
+            } catch (DateTimeParseException e) {
+                System.out.println("Error: Unable to parse lastServiceDate. Invalid format: " + e.getMessage());
+            }
+        }
+
+        // Only add to the map if CallReason matches and capacity > 180 (for CallReason 3)
+        if ((CallReason == 3 && capacity > 180) || CallReason == 4) {
+            List<AircraftData> aircraftList = airlineAircraftMap.getOrDefault(airline, new ArrayList<>());
+            aircraftList.add(new AircraftData(model, capacity, lastServiceDate));
+            airlineAircraftMap.put(airline, aircraftList);
+        }
+    }
+
+
+
 
     private static class AircraftData {
         String model;
@@ -156,13 +181,32 @@ public class JsonParser {
     public static void parsePassenger(String jsonResponse, Integer CallReason, String IATA) {
         try {
             JsonNode passengerArray = objectMapper.readTree(jsonResponse);
+            int passengerCount = 0; // Counter for passengers who visited the specified IATA
 
             for (JsonNode passengerNode : passengerArray) {
-                List<String> airportsVisited = passengerNode.findValuesAsText("airportsVisited");
+                String firstName = passengerNode.path("firstName").asText();
+                String lastName = passengerNode.path("lastName").asText();
+                JsonNode airportsVisitedNode = passengerNode.path("airportsVisited");
+
+                // Check if the airportsVisited field is an array and contains the specified IATA code
+                if (airportsVisitedNode.isArray()) {
+                    for (JsonNode airportNode : airportsVisitedNode) {
+                        if (airportNode.asText().equalsIgnoreCase(IATA)) {
+                            passengerCount++;
+                            System.out.println("Passenger: " + firstName + " " + lastName);
+                            break; // Stop checking once the IATA is found for this passenger
+                        }
+                    }
+                }
             }
 
+            // Print the total number of passengers who visited the specified IATA
+            System.out.println("\nTotal number of passengers who visited airport " + IATA + ": " + passengerCount);
+
         } catch (IOException e) {
-            System.out.println("Error parsing aircraft JSON: " + e.getMessage());
+            System.out.println("Error parsing passenger JSON: " + e.getMessage());
         }
     }
+
+
 }

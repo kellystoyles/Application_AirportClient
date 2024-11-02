@@ -12,6 +12,9 @@ import javax.jmdns.ServiceListener;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicReference;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.keyin.Util.JsonParser;
 
 public class ClientApplication {
@@ -305,19 +308,53 @@ public class ClientApplication {
             System.out.println("Enter IATA code for the airport you're checking into:");
             String visitedIATA = getUserChoiceStr(scanner).toUpperCase();
 
-            String requestBody = String.format(
-                    "{ \"visited_airports\": [\"%s\"] }",
-                    visitedIATA
-            );
+            // Step 1: Fetch the current data for the passenger
+            String currentPassengerData = sendGetRequest("/passenger/" + passengerId, "Passenger", BASE_URL);
 
-            String responseBody = sendPatchRequest("/passenger/" + passengerId, requestBody);
+            if (currentPassengerData != null) {
+                try {
+                    // Use a local ObjectMapper instance
+                    ObjectMapper localObjectMapper = new ObjectMapper();
+                    JsonNode passengerNode = localObjectMapper.readTree(currentPassengerData);
+                    JsonNode airportsVisitedNode = passengerNode.path("airportsVisited");
 
-            if (responseBody != null) {
-                System.out.println("Successfully checked in. Updated visited airports for passenger ID " + passengerId + ".");
+                    List<String> updatedAirportsVisited = new ArrayList<>();
+
+                    // Step 2: Copy existing airports to the new list
+                    if (airportsVisitedNode.isArray()) {
+                        for (JsonNode airportNode : airportsVisitedNode) {
+                            updatedAirportsVisited.add(airportNode.asText());
+                        }
+                    }
+
+                    // Step 3: Add the new IATA code if it's not already in the list
+                    if (!updatedAirportsVisited.contains(visitedIATA)) {
+                        updatedAirportsVisited.add(visitedIATA);
+                    }
+
+                    // Step 4: Construct JSON request body with the updated list
+                    String requestBody = localObjectMapper.writeValueAsString(
+                            Map.of("airportsVisited", updatedAirportsVisited)
+                    );
+
+                    // Step 5: Send PATCH request to update the passenger's visited airports
+                    String responseBody = sendPatchRequest("/passenger/" + passengerId, requestBody);
+
+                    if (responseBody != null) {
+                        System.out.println("Successfully checked in. Updated visited airports for passenger ID " + passengerId + ".\n" + responseBody);
+                    } else {
+                        System.out.println("Failed to check in or update visited airports.");
+                    }
+
+                } catch (IOException e) {
+                    System.out.println("Error processing current passenger data: " + e.getMessage());
+                }
             } else {
-                System.out.println("Failed to check in or update visited airports.");
+                System.out.println("Failed to fetch current data for passenger ID " + passengerId + ".");
             }
         }
+
+
 
         private static void addPassenger(){
             Scanner scanner = new Scanner(System.in);
@@ -333,12 +370,9 @@ public class ClientApplication {
             System.out.print("Enter Email: ");
             String email = scanner.nextLine();
 
-            System.out.print("Enter City: ");
-            Integer city = scanner.nextInt();
-
             String requestBody = String.format(
-                    "{ \"firstName\": \"%s\", \"lastName\": \"%s\", \"email\": \"%s\", \"city\": \"%d\"}",
-                    firstName, lastName, email, city
+                    "{ \"firstName\": \"%s\", \"lastName\": \"%s\", \"email\": \"%s\"}",
+                    firstName, lastName, email
             );
 
             String response = sendPostRequest("/passenger", requestBody, "Passenger");
@@ -455,7 +489,7 @@ public class ClientApplication {
             String iataToFind = getUserChoiceStr(scanner).toUpperCase();
             String responseBody = sendGetRequest("/passenger", "Passengers", BASE_URL);
             if (responseBody != null) {
-                JsonParser.parseAirports(responseBody, 4, iataToFind);
+                JsonParser.parsePassenger(responseBody, 4, iataToFind);
             }
         }
 
@@ -471,18 +505,18 @@ public class ClientApplication {
 
         private static void updateAircraftStatus(String id) {
             String responseBody = sendGetRequest("/aircraft/" + id, "Aircraft/" + id, BASE_URL);
-            String requestBody = "Undefined";
+            String requestBody = null;
             if (responseBody != null) {
                 System.out.println("Enter A, D, or S for (Active, Decommissioned, Sold) respectively ");
                 Scanner scanner = new Scanner(System.in);
                 String newStatus = getUserChoiceStr(scanner);
-                if (newStatus.toUpperCase() == "A") {
+                if (newStatus.toUpperCase().equals("A")) {
                     String newStatusLong = "Active";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
-                }else if (newStatus.toUpperCase() == "S") {
+                }else if (newStatus.toUpperCase().equals("S")) {
                     String newStatusLong = "Sold";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
-                }else if (newStatus.toUpperCase() == "D") {
+                }else if (newStatus.toUpperCase().equals("D")) {
                     String newStatusLong = "Decommissioned";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
                 }
@@ -553,6 +587,7 @@ public class ClientApplication {
                     return response.body();
                 } else {
                     System.out.println("Error: Received status code " + response.statusCode());
+                    System.out.println(response);
                     return null;
                 }
             } catch (Exception e) {
