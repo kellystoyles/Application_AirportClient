@@ -308,36 +308,30 @@ public class ClientApplication {
             System.out.println("Enter IATA code for the airport you're checking into:");
             String visitedIATA = getUserChoiceStr(scanner).toUpperCase();
 
-            // Step 1: Fetch the current data for the passenger
             String currentPassengerData = sendGetRequest("/passenger/" + passengerId, "Passenger", BASE_URL);
 
             if (currentPassengerData != null) {
                 try {
-                    // Use a local ObjectMapper instance
                     ObjectMapper localObjectMapper = new ObjectMapper();
                     JsonNode passengerNode = localObjectMapper.readTree(currentPassengerData);
                     JsonNode airportsVisitedNode = passengerNode.path("airportsVisited");
 
                     List<String> updatedAirportsVisited = new ArrayList<>();
 
-                    // Step 2: Copy existing airports to the new list
                     if (airportsVisitedNode.isArray()) {
                         for (JsonNode airportNode : airportsVisitedNode) {
                             updatedAirportsVisited.add(airportNode.asText());
                         }
                     }
 
-                    // Step 3: Add the new IATA code if it's not already in the list
                     if (!updatedAirportsVisited.contains(visitedIATA)) {
                         updatedAirportsVisited.add(visitedIATA);
                     }
 
-                    // Step 4: Construct JSON request body with the updated list
                     String requestBody = localObjectMapper.writeValueAsString(
                             Map.of("airportsVisited", updatedAirportsVisited)
                     );
 
-                    // Step 5: Send PATCH request to update the passenger's visited airports
                     String responseBody = sendPatchRequest("/passenger/" + passengerId, requestBody);
 
                     if (responseBody != null) {
@@ -546,7 +540,7 @@ public class ClientApplication {
                 }
             } catch (Exception e) {
                 System.out.println("Error fetching " + resourceName + ": " + e.getMessage());
-                e.printStackTrace(); // Print stack trace for more detailed debugging
+                e.printStackTrace();
                 return null;
             }
         }
