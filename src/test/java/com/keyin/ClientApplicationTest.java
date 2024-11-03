@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClientApplicationTest {
 
     @Mock
-    public HttpClient httpClient;
+    private static HttpClient httpClient = HttpClient.newHttpClient();
 
     @InjectMocks
     public ClientApplication.AirportClientApp clientApp;
