@@ -10,38 +10,22 @@ import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceListener;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicReference;
 
-// File Imports
-import com.keyin.Util.CitiesProcessing;
-import com.keyin.Util.AirportProcessing;
-import com.keyin.Util.AircraftProccessing;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.keyin.Util.JsonParser;
 
 public class ClientApplication {
     public static void main(String[] args) {
         AirportClientApp.main(args);
     }
-
     public static class AirportClientApp {
         private static Integer ActiveMenu;
         private static String BASE_URL;
-        private static final HttpClient httpClient = HttpClient.newHttpClient();
-        private static final Map<String, String> PROVINCE_ABBREVIATIONS = new HashMap<>();
-        static {
-            PROVINCE_ABBREVIATIONS.put("Newfoundland and Labrador", "NL");
-            PROVINCE_ABBREVIATIONS.put("Prince Edward Island", "PE");
-            PROVINCE_ABBREVIATIONS.put("Nova Scotia", "NS");
-            PROVINCE_ABBREVIATIONS.put("New Brunswick", "NB");
-            PROVINCE_ABBREVIATIONS.put("Quebec", "QC");
-            PROVINCE_ABBREVIATIONS.put("Ontario", "ON");
-            PROVINCE_ABBREVIATIONS.put("Manitoba", "MB");
-            PROVINCE_ABBREVIATIONS.put("Saskatchewan", "SK");
-            PROVINCE_ABBREVIATIONS.put("Alberta", "AB");
-            PROVINCE_ABBREVIATIONS.put("British Columbia", "BC");
-            PROVINCE_ABBREVIATIONS.put("Yukon", "YT");
-            PROVINCE_ABBREVIATIONS.put("Northwest Territories", "NT");
-            PROVINCE_ABBREVIATIONS.put("Nunavut", "NU");
-        }
+        private static HttpClient httpClient = HttpClient.newHttpClient();
+
 
 
         static {
@@ -80,7 +64,7 @@ public class ClientApplication {
                 jmdns.addServiceListener(serviceType, listener);
 
                 synchronized (lock) {
-                    lock.wait(5000);
+                    lock.wait(1000);
                 }
 
                 if (serverAddress.get() != null) {
@@ -107,7 +91,7 @@ public class ClientApplication {
                     MenuDisplay();
                     int choice = getUserChoiceInt(scanner);
                     processUserChoice(choice);
-                    if (choice == 4 && ActiveMenu != 1) {
+                    if (choice == 4 && ActiveMenu != 1 && ActiveMenu != 5) {
                         ActiveMenu = 1;
                     } else if (choice == 5 && ActiveMenu == 1) {
                         System.out.println("Exiting the application. Goodbye!");
@@ -139,7 +123,7 @@ public class ClientApplication {
                        Daily Airport Management
                     =============================
                     1. Update an aircraft out of service
-                    2. List the number of passengers will use airport YYZ daily
+                    2. List the number of passengers will use an airport daily
                     3. Lockdown
                     4. Back to main menu
                     =============================
@@ -152,7 +136,7 @@ public class ClientApplication {
                     =============================
                     1. List all provinces that have over 1 million people and only 1 major airport
                     2. Which planes can fly into/out of xyz airport
-                    3. Aircraft Service Dates
+                    3. Check Aircraft Service Date
                     4. Back to main menu
                     =============================
                     """);
@@ -207,105 +191,209 @@ public class ClientApplication {
         }
 
         private static void processUserChoice(int choice) {
-            if (ActiveMenu == 1) { // Main Menu Open
+            if (ActiveMenu == 1) {
                 switch (choice) {
-                    case 1: // Open Daily Airport Menu
+                    case 1:
                         ActiveMenu = 2;
                         break;
-                    case 2: // Open Future Airport Menu
+                    case 2:
                         ActiveMenu = 3;
                         break;
-                    case 3: // Open Airline Management
+                    case 3:
                         ActiveMenu = 4;
                         break;
-                    case 4: // Open Passenger Management
+                    case 4:
                         ActiveMenu = 5;
                         break;
-                    case 5: // Exit
+                    case 5:
                         break;
-                    default: // Invalid Choice
+                    default:
                         System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
             }
-            else if  (ActiveMenu == 2) { // Daily Airport Menu
+            else if  (ActiveMenu == 2) {
                 switch (choice) {
-                    case 1: // Update all aircraft out of service #Implemented but untested#
+                    case 1:
                         System.out.println("Enter the Aircraft ID for the aircraft you want to update");
                         Scanner scanner = new Scanner(System.in);
                         String endpointId = Integer.toString(getUserChoiceInt(scanner));
                         updateAircraftStatus(endpointId);
+                        ActiveMenu = 1;
                         break;
-                    case 2: // List the number of passengers will use airport YHZ daily
-                       PassengerCountForAirport();
+                    case 2:
+                        airportTraffic();
+                        ActiveMenu = 1;
                         break;
-                    case 3: // Lockdown
+                    case 3:
                         lockdown();
-                    case 4: // Back To Main
+                        ActiveMenu = 1;
                         break;
-                    default: // Invalid Input
+                    case 4:
+                        break;
+                    default:
                         System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
-            } else if (ActiveMenu == 3) { // Future Airport Menu
+            } else if (ActiveMenu == 3) {
                 switch (choice) {
-                    case 1: // List all provinces that have over 1 million people and only 1 major airport
+                    case 1:
                         airportsByPopulation();
                         ActiveMenu = 1;
                         break;
-                    case 2: // Which planes cannot fly into/out of xyz airport
+                    case 2:
                         aircraftAccess();
                         ActiveMenu = 1;
                         break;
-                    case 3: // Aircraft Service Dates
+                    case 3:
+                        aircraftServicing();
+                        ActiveMenu = 1;
                         break;
-                    case 5: // Back To Main
+                    case 5:
                         break;
-                    default: // Invalid Input
+                    default:
                         System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
-            } else if (ActiveMenu == 4) { // Airline Management Menu
+            } else if (ActiveMenu == 4) {
                 switch (choice) {
-                    case 1: // How many planes have a capacity greater than 180 passengers in each fleet
+                    case 1:
                         airlineNumOfLrgCapacity();
+                        ActiveMenu = 1;
                         break;
-                    case 2: // Add new aircraft
-                        addNewAircraft(); // Not Complete needs re looking after the data is final
+                    case 2:
+                        addNewAircraft();
+                        ActiveMenu = 1;
                         break;
-                    case 3: // Delete any plane that is decommissioned or sold
-                        // If Based on id the following works
+                    case 3:
                         System.out.println("Aircraft ID to delete");
                         Scanner scanner = new Scanner(System.in);
                         String idToDelete = Integer.toString(getUserChoiceInt(scanner));
                         deletingUnactiveAircrafts(idToDelete);
                         ActiveMenu = 1;
                         break;
-                    case 5: // Back To Main
+                    case 5:
                         break;
-                    default: // Invalid Input
+                    default:
                         System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
-            } else if (ActiveMenu == 5) { // Passenger Management Menu
+            } else if (ActiveMenu == 5) {
                 switch (choice) {
-                    case 1: // List the number of passengers will use airport YHZ daily
-                        getPassengerCountForAirport(String airportCode)
+                    case 1:
+                        addPassenger();
+                        ActiveMenu = 1;
                         break;
-                    case 2: // Delete a passenger from a flight
-                        deletePassenger(Long id)
+                    case 2:
+                        removePassenger();
+                        ActiveMenu = 1;
                         break;
-                    case 3: // Add a passenger to a flight
-                        addPassenger(Passenger passenger);
+                    case 3:
+                        checkIn();
+
                         break;
-                    case 5: // Back To Main
+                    case 4:
+                        ActiveMenu = 1;
                         break;
-                    default: // Invalid Input
+                    default:
                         System.out.println("Invalid input. Please enter a valid choice.");
                         break;
                 }
             }
         }
+
+        private static void checkIn() {
+            System.out.println("Enter your passenger ID:");
+            Scanner scanner = new Scanner(System.in);
+            String passengerId = Integer.toString(getUserChoiceInt(scanner));
+
+            System.out.println("Enter IATA code for the airport you're checking into:");
+            String visitedIATA = getUserChoiceStr(scanner).toUpperCase();
+
+            String currentPassengerData = sendGetRequest("/passenger/" + passengerId, "Passenger", BASE_URL);
+
+            if (currentPassengerData != null) {
+                try {
+                    ObjectMapper localObjectMapper = new ObjectMapper();
+                    JsonNode passengerNode = localObjectMapper.readTree(currentPassengerData);
+                    JsonNode airportsVisitedNode = passengerNode.path("airportsVisited");
+
+                    List<String> updatedAirportsVisited = new ArrayList<>();
+
+                    if (airportsVisitedNode.isArray()) {
+                        for (JsonNode airportNode : airportsVisitedNode) {
+                            updatedAirportsVisited.add(airportNode.asText());
+                        }
+                    }
+
+                    if (!updatedAirportsVisited.contains(visitedIATA)) {
+                        updatedAirportsVisited.add(visitedIATA);
+                    }
+
+                    String requestBody = localObjectMapper.writeValueAsString(
+                            Map.of("airportsVisited", updatedAirportsVisited)
+                    );
+
+                    String responseBody = sendPatchRequest("/passenger/" + passengerId, requestBody);
+
+                    if (responseBody != null) {
+                        System.out.println("Successfully checked in. Updated visited airports for passenger ID " + passengerId + ".\n" + responseBody);
+                    } else {
+                        System.out.println("Failed to check in or update visited airports.");
+                    }
+
+                } catch (IOException e) {
+                    System.out.println("Error processing current passenger data: " + e.getMessage());
+                }
+            } else {
+                System.out.println("Failed to fetch current data for passenger ID " + passengerId + ".");
+            }
+        }
+
+
+
+        private static void addPassenger(){
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Add New Passenger");
+            System.out.println("================");
+
+            System.out.print("Enter First Name: ");
+            String firstName = scanner.nextLine();
+
+            System.out.print("Enter Last Name: ");
+            String lastName = scanner.nextLine();
+
+            System.out.print("Enter Email: ");
+            String email = scanner.nextLine();
+
+            String requestBody = String.format(
+                    "{ \"firstName\": \"%s\", \"lastName\": \"%s\", \"email\": \"%s\"}",
+                    firstName, lastName, email
+            );
+
+            String response = sendPostRequest("/passenger", requestBody, "Passenger");
+
+            if (response != null) {
+                System.out.println("New passenger added successfully.");
+            } else {
+                System.out.println("Failed to add new passenger.");
+            }
+        }
+
+        private static void removePassenger(){
+            System.out.println("Enter the Passenger ID to delete:");
+            Scanner scanner = new Scanner(System.in);
+            String passengerId = Integer.toString(getUserChoiceInt(scanner));
+
+            String response = sendDeleteRequest("/passenger/" + passengerId, "Passenger");
+
+            if (response != null) {
+                System.out.println("Passenger with ID " + passengerId + " deleted successfully.");
+            } else {
+                System.out.println("Failed to delete passenger with ID " + passengerId + ".");
+            }
+        }
+
 
         private static void lockdown(){
             System.out.println("\n" + "#".repeat(51));
@@ -321,29 +409,31 @@ public class ClientApplication {
             String input;
 
             while (true) {
-                System.out.print(">> "); // Prompt symbol for user input
-                input = getUserChoiceStr(scanner).trim().toUpperCase(); // Read and process input
+                System.out.print(">> ");
+                input = getUserChoiceStr(scanner).trim().toUpperCase();
 
                 if (input.equals("EXIT")) {
                     System.out.println("Exiting lockdown. Returning to main menu. \n");
-                    break; // Exit the loop and return to the main menu
+                    break;
                 } else {
                     System.out.println("Invalid input. Please type EXIT to leave lockdown.");
                 }
             }
         }
 
+
+
         private static void airportsByPopulation() {
-            String responseBody = sendGetRequest("/city", "City");
+            String responseBody = sendGetRequest("/city", "City", BASE_URL);
             if (responseBody != null) {
-                CitiesProcessing.processCityAllData(responseBody, 1);
+                JsonParser.parseCities(responseBody, 1);
             }
         }
 
         private static void airlineNumOfLrgCapacity() {
-            String responseBody = sendGetRequest("/aircraft", "Aircraft");
+            String responseBody = sendGetRequest("/aircraft", "Aircraft", BASE_URL);
             if (responseBody != null) {
-                AircraftProccessing.processAircraftAllData(responseBody, 3);
+                JsonParser.parseAircraft(responseBody, 3);
             }
         }
 
@@ -359,64 +449,72 @@ public class ClientApplication {
             String model = scanner.nextLine();
 
             System.out.print("Enter Aircraft Capacity: ");
-            int capacity = getUserChoiceInt(scanner);
+            Integer capacity = scanner.nextInt();
 
-            // Needs Status Value Might be best to auto assign as "Active"
 
-            // Need to add Airport Access list
+            String status = "ACTIVE";
 
-            System.out.print("Enter Last Maintenance Date (e.g., 2024-12-01): ");
-            String maintenanceSchedule = getUserChoiceStr(scanner);
+            LocalDate maintenanceDate = LocalDate.now().plusDays(30);
 
-            // Construct JSON request body
             String requestBody = String.format(
-                    "{ \"airline\": \"%s\", \"model\": \"%s\", \"capacity\": %d, \"maintenanceSchedule\": \"%s\" }",
-                    airline, model, capacity, maintenanceSchedule
+                    "{ \"airline\": \"%s\", \"model\": \"%s\", \"capacity\": %d, \"status\": \"%s\", \"maintenanceDate\": \"%s\" }",
+                    airline, model, capacity, status, maintenanceDate
             );
 
-            // Send POST request to create new aircraft
             String response = sendPostRequest("/aircraft", requestBody, "Aircraft");
 
             if (response != null) {
-                // Optionally process the response, e.g., parse the created aircraft details
                 System.out.println("New aircraft added successfully.");
             } else {
                 System.out.println("Failed to add new aircraft.");
             }
         }
 
+        private static void aircraftServicing(){
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Enter ID for the Aircraft");
+            String aircraftId = getUserChoiceStr(scanner);
+            String responseBody = sendGetRequest("/aircraft/" + aircraftId, "Aircraft", BASE_URL);
+            if (responseBody != null){
+                JsonParser.parseAircraft(responseBody, 4);
+            }
+        }
 
-        private static void aircraftAccess(){
-            String responseBody = sendGetRequest("/airports", "Airports");
+        private static void airportTraffic(){
             System.out.println("IATA Code for the airport");
             Scanner scanner = new Scanner(System.in);
             String iataToFind = getUserChoiceStr(scanner).toUpperCase();
-            List<String> aircraftList = new ArrayList<>();
+            String responseBody = sendGetRequest("/passenger", "Passengers", BASE_URL);
             if (responseBody != null) {
-                AirportProcessing.processAirportDataAll(responseBody, 1, iataToFind, aircraftList);
+                JsonParser.parsePassenger(responseBody, 4, iataToFind);
             }
-            if (!aircraftList.isEmpty()) {
-                System.out.println("Aircraft for IATA code " + iataToFind + ": " + aircraftList+ "\n");
-            }else {
-                System.out.println("No Aircraft found for IATA code " + iataToFind+ "\n");
+        }
+
+        private static void aircraftAccess(){
+            String responseBodyAirport = sendGetRequest("/airports", "Airports", BASE_URL);
+            System.out.println("IATA Code for the airport");
+            Scanner scanner = new Scanner(System.in);
+            String iataToFind = getUserChoiceStr(scanner).toUpperCase();
+            if (responseBodyAirport != null) {
+                JsonParser.parseAirports(responseBodyAirport, 1, iataToFind);
             }
         }
 
         private static void updateAircraftStatus(String id) {
-            String responseBody = sendGetRequest("/aircraft/" + id, "Aircraft/" + id);
-            String requestBody = "Undefined";
+            String responseBody = sendGetRequest("/aircraft/" + id, "Aircraft/" + id, BASE_URL);
+            String requestBody = null;
             if (responseBody != null) {
                 System.out.println("Enter A, D, or S for (Active, Decommissioned, Sold) respectively ");
                 Scanner scanner = new Scanner(System.in);
-                String newStatus = Integer.toString(getUserChoiceInt(scanner));
-                if (newStatus == "A") {
-                    String newStatusLong = "Active";
+                String newStatus = getUserChoiceStr(scanner);
+                if (newStatus.toUpperCase().equals("A")) {
+                    String newStatusLong = "ACTIVE";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
-                }else if (newStatus == "S") {
-                    String newStatusLong = "Sold";
+                }else if (newStatus.toUpperCase().equals("S")) {
+                    String newStatusLong = "SOLD";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
-                }else if (newStatus == "D") {
-                    String newStatusLong = "Decommissioned";
+                }else if (newStatus.toUpperCase().equals("D")) {
+                    String newStatusLong = "DECOMMISSIONED";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
                 }
                 sendPatchRequest("/aircraft/" + id, requestBody);
@@ -430,14 +528,13 @@ public class ClientApplication {
             String responseBody = sendDeleteRequest(endpoint, "Aircraft Id");
         }
 
-        private static String sendGetRequest(String endpoint, String resourceName) {
+        public static String sendGetRequest(String endpoint, String resourceName, String baseURL) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(BASE_URL + endpoint))
+                        .uri(URI.create(baseURL + endpoint))
                         .GET()
                         .build();
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
                 if (response.statusCode() == 200) {
                     return response.body();
                 } else {
@@ -446,6 +543,7 @@ public class ClientApplication {
                 }
             } catch (Exception e) {
                 System.out.println("Error fetching " + resourceName + ": " + e.getMessage());
+                e.printStackTrace();
                 return null;
             }
         }
@@ -454,7 +552,7 @@ public class ClientApplication {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(BASE_URL + endpoint))
-                        .DELETE()  // Use DELETE() method here
+                        .DELETE()
                         .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -477,15 +575,16 @@ public class ClientApplication {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(BASE_URL + endpoint))
                         .header("Content-Type", "application/json")
-                        .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody))  // Custom PATCH method
+                        .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody))
                         .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-                if (response.statusCode() == 200 || response.statusCode() == 204) {  // 204 No Content often indicates success for PATCH
+                if (response.statusCode() == 200 || response.statusCode() == 204) {
                     return response.body();
                 } else {
                     System.out.println("Error: Received status code " + response.statusCode());
+                    System.out.println(response);
                     return null;
                 }
             } catch (Exception e) {
