@@ -60,10 +60,11 @@ public class ClientApplication {
                         }
                     }
                 };
+
                 jmdns.addServiceListener(serviceType, listener);
 
                 synchronized (lock) {
-                    lock.wait(5000);
+                    lock.wait(1000);
                 }
 
                 if (serverAddress.get() != null) {
@@ -122,7 +123,7 @@ public class ClientApplication {
                        Daily Airport Management
                     =============================
                     1. Update an aircraft out of service
-                    2. List the number of passengers will use airport YYZ daily
+                    2. List the number of passengers will use an airport daily
                     3. Lockdown
                     4. Back to main menu
                     =============================
@@ -449,7 +450,8 @@ public class ClientApplication {
             System.out.print("Enter Aircraft Capacity: ");
             Integer capacity = scanner.nextInt();
 
-            String status = "Active";
+
+            String status = "ACTIVE";
 
             LocalDate maintenanceDate = LocalDate.now().plusDays(30);
 
@@ -505,13 +507,13 @@ public class ClientApplication {
                 Scanner scanner = new Scanner(System.in);
                 String newStatus = getUserChoiceStr(scanner);
                 if (newStatus.toUpperCase().equals("A")) {
-                    String newStatusLong = "Active";
+                    String newStatusLong = "ACTIVE";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
                 }else if (newStatus.toUpperCase().equals("S")) {
-                    String newStatusLong = "Sold";
+                    String newStatusLong = "SOLD";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
                 }else if (newStatus.toUpperCase().equals("D")) {
-                    String newStatusLong = "Decommissioned";
+                    String newStatusLong = "DECOMMISSIONED";
                     requestBody = "{\"status\":\"" + newStatusLong + "\"}";
                 }
                 sendPatchRequest("/aircraft/" + id, requestBody);
