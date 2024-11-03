@@ -15,7 +15,7 @@ public class ClientApplicationTest {
     @Mock
     private HttpClient httpClient;
 
-    private AirportClientApp clientApp;
+    private ClientApplication clientApp;
 
     @BeforeEach
     public void setUp() {
@@ -23,7 +23,7 @@ public class ClientApplicationTest {
         MockitoAnnotations.openMocks(this);
 
         // Create an instance of AirportClientApp with the mocked httpClient
-        clientApp = new AirportClientApp(httpClient);
+        clientApp = new ClientApplication(httpClient);
     }
 
     @Test
