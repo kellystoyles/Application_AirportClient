@@ -17,10 +17,10 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ClientApplicationTest {
 
     @Mock
-    private HttpClient httpClient;
+    public HttpClient httpClient;
 
     @InjectMocks
-    private ClientApplication.AirportClientApp clientApp;
+    public ClientApplication.AirportClientApp clientApp;
 
     @BeforeEach
     public void setUp() throws Exception {
