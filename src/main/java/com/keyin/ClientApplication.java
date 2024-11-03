@@ -12,23 +12,28 @@ import javax.jmdns.ServiceListener;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.keyin.Util.JsonParser;
 
+
 public class ClientApplication {
-    public static void main(String[] args) {
-        AirportClientApp.main(args);
+    static public void main(String[] args) {
+        HttpClient httpClient = HttpClient.newHttpClient(); // Or however you instantiate it
+        AirportClientApp app = new AirportClientApp(httpClient);
+        app.run(); // Call the instance method
     }
-    public static class AirportClientApp {
-        private static Integer ActiveMenu;
-        private static String BASE_URL;
-        private static HttpClient httpClient = HttpClient.newHttpClient();
+    static public class AirportClientApp {
+        private Integer ActiveMenu;
+        private String BASE_URL;
+        private final HttpClient httpClient;
 
+        public AirportClientApp(HttpClient httpClient) {
+            this.httpClient = httpClient;
+            initializeBaseUrl();
+        }
 
-
-        static {
+        private void initializeBaseUrl() {
             try {
                 String serviceType = "_airportserver._tcp.local.";
                 JmDNS jmdns = JmDNS.create();
@@ -81,7 +86,7 @@ public class ClientApplication {
             }
         }
 
-        public static void main(String[] args) {
+        public void run() {
             System.out.println("\nWelcome to the Airport Management System!");
             Scanner scanner = new Scanner(System.in);
             ActiveMenu = 1;
@@ -102,7 +107,7 @@ public class ClientApplication {
             }
         }
 
-        private static void MenuDisplay() {
+        private void MenuDisplay() {
             if(ActiveMenu == 1){
                 System.out.println("""
                 =============================
@@ -189,7 +194,7 @@ public class ClientApplication {
             }
         }
 
-        private static void processUserChoice(int choice) {
+        private void processUserChoice(int choice) {
             if (ActiveMenu == 1) {
                 switch (choice) {
                     case 1:
@@ -300,7 +305,7 @@ public class ClientApplication {
             }
         }
 
-        private static void checkIn() {
+        private void checkIn() {
             System.out.println("Enter your passenger ID:");
             Scanner scanner = new Scanner(System.in);
             String passengerId = Integer.toString(getUserChoiceInt(scanner));
@@ -350,7 +355,7 @@ public class ClientApplication {
 
 
 
-        private static void addPassenger(){
+        private  void addPassenger(){
             Scanner scanner = new Scanner(System.in);
             System.out.println("Add New Passenger");
             System.out.println("================");
@@ -378,7 +383,7 @@ public class ClientApplication {
             }
         }
 
-        private static void removePassenger(){
+        private  void removePassenger(){
             System.out.println("Enter the Passenger ID to delete:");
             Scanner scanner = new Scanner(System.in);
             String passengerId = Integer.toString(getUserChoiceInt(scanner));
@@ -421,21 +426,21 @@ public class ClientApplication {
 
 
 
-        private static void airportsByPopulation() {
+        private  void airportsByPopulation() {
             String responseBody = sendGetRequest("/city", "City", BASE_URL);
             if (responseBody != null) {
                 JsonParser.parseCities(responseBody, 1);
             }
         }
 
-        private static void airlineNumOfLrgCapacity() {
+        private  void airlineNumOfLrgCapacity() {
             String responseBody = sendGetRequest("/aircraft", "Aircraft", BASE_URL);
             if (responseBody != null) {
                 JsonParser.parseAircraft(responseBody, 3);
             }
         }
 
-        private static void addNewAircraft() {
+        private void addNewAircraft() {
             Scanner scanner = new Scanner(System.in);
             System.out.println("Add New Aircraft");
             System.out.println("================");
@@ -467,7 +472,7 @@ public class ClientApplication {
             }
         }
 
-        private static void aircraftServicing(){
+        private void aircraftServicing(){
             Scanner scanner = new Scanner(System.in);
             System.out.println("Enter ID for the Aircraft");
             String aircraftId = getUserChoiceStr(scanner);
@@ -477,7 +482,7 @@ public class ClientApplication {
             }
         }
 
-        private static void airportTraffic(){
+        private void airportTraffic(){
             System.out.println("IATA Code for the airport");
             Scanner scanner = new Scanner(System.in);
             String iataToFind = getUserChoiceStr(scanner).toUpperCase();
@@ -487,7 +492,7 @@ public class ClientApplication {
             }
         }
 
-        private static void aircraftAccess(){
+        private void aircraftAccess(){
             String responseBodyAirport = sendGetRequest("/airports", "Airports", BASE_URL);
             System.out.println("IATA Code for the airport");
             Scanner scanner = new Scanner(System.in);
@@ -497,7 +502,7 @@ public class ClientApplication {
             }
         }
 
-        private static void updateAircraftStatus(String id) {
+        private void updateAircraftStatus(String id) {
             String responseBody = sendGetRequest("/aircraft/" + id, "Aircraft/" + id, BASE_URL);
             String requestBody = null;
             if (responseBody != null) {
@@ -520,18 +525,18 @@ public class ClientApplication {
             }
         }
 
-        private static void deletingUnactiveAircrafts(String aircraftId) {
+        private void deletingUnactiveAircrafts(String aircraftId) {
             String endpoint = "/aircraft/" + aircraftId;
             String responseBody = sendDeleteRequest(endpoint, "Aircraft Id");
         }
 
-        public static String sendGetRequest(String endpoint, String resourceName, String baseURL) {
+        public String sendGetRequest(String endpoint, String resourceName, String baseURL) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(baseURL + endpoint))
                         .GET()
                         .build();
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() == 200) {
                     return response.body();
                 } else {
@@ -545,14 +550,14 @@ public class ClientApplication {
             }
         }
 
-        private static String sendDeleteRequest(String endpoint, String resourceName) {
+        private String sendDeleteRequest(String endpoint, String resourceName) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(BASE_URL + endpoint))
                         .DELETE()
                         .build();
 
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() == 200 || response.statusCode() == 204) {
                     System.out.println("Successfully deleted " + resourceName + ": " + endpoint.substring(endpoint.lastIndexOf('/') + 1));
@@ -567,7 +572,7 @@ public class ClientApplication {
             }
         }
 
-        private static String sendPatchRequest(String endpoint, String requestBody) {
+        private String sendPatchRequest(String endpoint, String requestBody) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(BASE_URL + endpoint))
@@ -575,7 +580,7 @@ public class ClientApplication {
                         .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody))
                         .build();
 
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() == 200 || response.statusCode() == 204) {
                     return response.body();
@@ -590,7 +595,7 @@ public class ClientApplication {
             }
         }
 
-        private static String sendPostRequest(String endpoint, String requestBody, String resourceName) {
+        private String sendPostRequest(String endpoint, String requestBody, String resourceName) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(BASE_URL + endpoint))
@@ -598,7 +603,7 @@ public class ClientApplication {
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                         .build();
 
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() == 200 || response.statusCode() == 201) {
                     System.out.println("Successfully created " + resourceName + ": " + response.body());
@@ -613,7 +618,6 @@ public class ClientApplication {
                 return null;
             }
         }
-
 
     }
 }

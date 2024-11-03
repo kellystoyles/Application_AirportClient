@@ -22,12 +22,10 @@ public class ClientApplicationTest {
     @InjectMocks
     private ClientApplication.AirportClientApp clientApp;
 
+    // No need for reflection anymore
     @BeforeEach
-    public void setUp() throws Exception {
-        // Use reflection to set the static HttpClient field
-        Field httpClientField = ClientApplication.AirportClientApp.class.getDeclaredField("httpClient");
-        httpClientField.setAccessible(true);
-        httpClientField.set(null, httpClient); // Set the static field to the mocked HttpClient
+    public void setUp() {
+        clientApp = new ClientApplication.AirportClientApp(httpClient);
     }
 
     @Test
