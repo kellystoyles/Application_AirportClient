@@ -19,9 +19,9 @@ import com.keyin.Util.JsonParser;
 
 public class ClientApplication {
     static public void main(String[] args) {
-        HttpClient httpClient = HttpClient.newHttpClient(); // Or however you instantiate it
+        HttpClient httpClient = HttpClient.newHttpClient();
         AirportClientApp app = new AirportClientApp(httpClient);
-        app.run(); // Call the instance method
+        app.run();
     }
     static public class AirportClientApp {
         private Integer ActiveMenu;
