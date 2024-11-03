@@ -2,30 +2,28 @@ package com.keyin;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockitoAnnotations;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.lang.reflect.Field;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(MockitoExtension.class)
-public class ClientApplicationTest {
+public class AirportClientAppTest {
 
     @Mock
     private HttpClient httpClient;
 
-    @InjectMocks
-    private ClientApplication.AirportClientApp clientApp;
+    private AirportClientApp clientApp;
 
-    // No need for reflection anymore
     @BeforeEach
     public void setUp() {
-        clientApp = new ClientApplication.AirportClientApp(httpClient);
+        // Initialize mocks
+        MockitoAnnotations.openMocks(this);
+
+        // Create an instance of AirportClientApp with the mocked httpClient
+        clientApp = new AirportClientApp(httpClient);
     }
 
     @Test
