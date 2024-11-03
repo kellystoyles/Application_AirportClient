@@ -10,7 +10,7 @@ import java.net.http.HttpResponse;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AirportClientAppTest {
+public class ClientApplicationTest {
 
     @Mock
     private HttpClient httpClient;
