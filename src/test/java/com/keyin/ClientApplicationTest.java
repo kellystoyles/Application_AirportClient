@@ -34,11 +34,11 @@ public class ClientApplicationTest {
     public void testSendGetRequest() throws Exception {
         // Mock response
         HttpResponse<String> mockResponse = mock(HttpResponse.class);
-        when(mockResponse.statusCode()).thenReturn(200);
-        when(mockResponse.body()).thenReturn("{\"data\":\"sample response\"}");
+        lenient().when(mockResponse.statusCode()).thenReturn(200);
+        lenient().when(mockResponse.body()).thenReturn("{\"data\":\"sample response\"}");
 
         // Mock httpClient behavior
-        when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+        lenient().when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
                 .thenReturn(mockResponse);
 
         // Call the method under test
@@ -46,5 +46,23 @@ public class ClientApplicationTest {
 
         // Verify the result
         assertEquals("{\"data\":\"sample response\"}", response);
+    }
+
+    @Test
+    public void testSendGetRequestWithError() throws Exception {
+        // Mock response with an error status code
+        HttpResponse<String> mockResponse = mock(HttpResponse.class);
+        lenient().when(mockResponse.statusCode()).thenReturn(500);
+        lenient().when(mockResponse.body()).thenReturn("Internal Server Error");
+
+        // Mock httpClient behavior
+        lenient().when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenReturn(mockResponse);
+
+        // Call the method under test
+        String response = clientApp.sendGetRequest("/error-endpoint", "ErrorResource", "http://mock-url:8080/api");
+
+        // Verify the result
+        assertNull(response);
     }
 }
