@@ -290,6 +290,7 @@ public class ClientApplication {
                         break;
                     case 3:
                         checkIn();
+
                         break;
                     case 4:
                         ActiveMenu = 1;
