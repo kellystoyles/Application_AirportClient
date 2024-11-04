@@ -26,7 +26,7 @@ public class ClientApplication {
         private static String BASE_URL;
         private static HttpClient httpClient = HttpClient.newHttpClient();
 
-        //hi
+        //h
 
         static {
             try {
